@@ -92,3 +92,10 @@ body {
     @apply bg-background text-foreground;
   }
 }
+.hover-overlay {
+  border: 2px dashed transparent; /* Bordure transparente par défaut */
+}
+
+.hover-overlay:hover {
+  border: 2px dashed #ccc; /* Bordure grise en pointillés au survol */
+}

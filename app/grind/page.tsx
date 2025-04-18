@@ -245,6 +245,7 @@ export default function GrindPage() {
                                         setOverlayPosition(position);
                                     }}
                                     //bounds="window"
+                                    className="hover-overlay"
                                     enableResizing
                                     lockAspectRatio
                                     style={{
