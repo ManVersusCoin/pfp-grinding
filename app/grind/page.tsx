@@ -9,7 +9,12 @@ import { OverlayPicker } from '@/components/OverlayPicker'
 import { fetchNFTs } from '@/app/actions/nft-actions'
 import { SUPPORTED_CHAINS } from '@/lib/constants'
 
-import { Button, Input, Select, Label } from '@/components/ui' // Import des composants UI
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent } from "@/components/ui/card"
+import { Slider } from "@/components/ui/slider"
 
 export default function GrindPage() {
   const [selectedNft, setSelectedNft] = useState<string | null>(null)
