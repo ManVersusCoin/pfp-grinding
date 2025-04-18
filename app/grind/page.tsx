@@ -74,7 +74,7 @@ const generateCanvasImage = (
   };
   
   // Fonction pour gérer l'exportation et la copie dans le presse-papier
-  const handleExport = () => {
+  const handleExport = (selectedNft: string, selectedOverlay: string | null, overlayPosition: { x: number, y: number }, overlaySize: { width: number, height: number }, rotation: number, backgroundColor: string) => {
     const canvas = generateCanvasImage(
       selectedNft,
       selectedOverlay,
@@ -95,7 +95,7 @@ const generateCanvasImage = (
   };
   
   // Fonction pour copier l'image dans le presse-papier
-  const handleCopyToClipboard = async () => {
+  const handleCopyToClipboard = async (selectedNft: string, selectedOverlay: string | null, overlayPosition: { x: number, y: number }, overlaySize: { width: number, height: number }, rotation: number, backgroundColor: string) => {
     const canvas = generateCanvasImage(
       selectedNft,
       selectedOverlay,
@@ -136,9 +136,47 @@ export default function GrindPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleRotate = () => {
-    setRotation((prev) => (prev + 2) % 360)
+
+
+  const handleRotate = (direction: 'left' | 'right') => {
+    setRotation((prev) => (direction === 'left' ? (prev - 2) % 360 : (prev + 2) % 360))
   }
+
+  // Fonction pour augmenter la taille de l'overlay
+  const handleIncreaseSize = () => {
+    setOverlaySize((prev) => ({
+      width: prev.width * 1.1,  // Augmente la taille de 10%
+      height: prev.height * 1.1,
+    }))
+  }
+
+  // Fonction pour diminuer la taille de l'overlay
+  const handleDecreaseSize = () => {
+    setOverlaySize((prev) => ({
+      width: prev.width * 0.9,  // Réduit la taille de 10%
+      height: prev.height * 0.9,
+    }))
+  }
+
+  // Fonction pour déplacer l'overlay avec les flèches
+  const moveOverlay = (direction: 'up' | 'down' | 'left' | 'right') => {
+    setOverlayPosition((prev) => {
+      const movement = 10; // Distance de mouvement
+      switch (direction) {
+        case 'up':
+          return { x: prev.x, y: prev.y - movement }
+        case 'down':
+          return { x: prev.x, y: prev.y + movement }
+        case 'left':
+          return { x: prev.x - movement, y: prev.y }
+        case 'right':
+          return { x: prev.x + movement, y: prev.y }
+        default:
+          return prev
+      }
+    })
+  }
+
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setWalletAddress(e.target.value)
   }
@@ -230,58 +268,95 @@ export default function GrindPage() {
           >
             <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain" />
             {selectedOverlay && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative">
-                  {/* Boutons de rotation */}
-                  <button
-                    onClick={() => handleRotate('left')}
-                    className="absolute top-0 left-1/4 bg-blue-600 text-white p-1 rounded-full shadow z-10"
-                  >
-                    ↺
-                  </button>
-                  <button
-                    onClick={() => handleRotate('right')}
-                    className="absolute top-0 right-1/4 bg-blue-600 text-white p-1 rounded-full shadow z-10"
-                  >
-                    ↻
-                  </button>
-
-                  {/* Rnd pour overlay */}
-                  <Rnd
-                    size={overlaySize}
-                    position={overlayPosition}
-                    onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
-                    onResizeStop={(_, __, ref, ___, position) => {
-                      setOverlaySize({
-                        width: parseInt(ref.style.width),
-                        height: parseInt(ref.style.height),
-                      });
-                      setOverlayPosition(position);
-                    }}
-                    bounds="window"
-                    enableResizing
-                    lockAspectRatio
-                    style={{
-                      transform: `rotate(${rotation}deg)`,
-                      border: '2px dashed #ccc',
-                    }}
-                  >
-                    <img
-                      src={selectedOverlay}
-                      alt="Overlay"
-                      className="w-full h-full object-contain pointer-events-none"
-                    />
-                  </Rnd>
-                </div>
-              </div>
+              <Rnd
+                size={overlaySize}
+                position={overlayPosition}
+                onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
+                onResizeStop={(_, __, ref, ___, position) => {
+                  setOverlaySize({
+                    width: parseInt(ref.style.width),
+                    height: parseInt(ref.style.height),
+                  })
+                  setOverlayPosition(position)
+                }}
+                bounds="window"
+                enableResizing
+                lockAspectRatio
+                style={{
+                  transform: `rotate(${rotation}deg)`,
+                  border: '2px dashed #ccc',
+                }}
+              >
+                <img
+                  src={selectedOverlay}
+                  alt="Overlay"
+                  className="w-full h-full object-contain pointer-events-none"
+                />
+              </Rnd>
             )}
           </div>
 
-          {/* Exportation */}
-          <Button onClick={handleExport}>Download Image</Button>
+          {/* Barre d'outils sous l'image */}
+          <div className="flex gap-2 mt-4">
+            {/* Boutons de rotation */}
+            <button
+              onClick={() => handleRotate('left')}
+              className="bg-blue-600 text-white p-2 rounded-full shadow"
+            >
+              ↺
+            </button>
+            <button
+              onClick={() => handleRotate('right')}
+              className="bg-blue-600 text-white p-2 rounded-full shadow"
+            >
+              ↻
+            </button>
 
-          {/* Copie dans le presse-papier */}
-          <Button onClick={handleCopyToClipboard}>Copy to Clipboard</Button>
+            {/* Boutons pour agrandir/réduire */}
+            <button
+              onClick={handleIncreaseSize}
+              className="bg-green-600 text-white p-2 rounded-full shadow"
+            >
+              +
+            </button>
+            <button
+              onClick={handleDecreaseSize}
+              className="bg-red-600 text-white p-2 rounded-full shadow"
+            >
+              -
+            </button>
+
+            {/* Flèches de déplacement */}
+            <button
+              onClick={() => moveOverlay('up')}
+              className="bg-yellow-600 text-white p-2 rounded-full shadow"
+            >
+              ↑
+            </button>
+            <button
+              onClick={() => moveOverlay('down')}
+              className="bg-yellow-600 text-white p-2 rounded-full shadow"
+            >
+              ↓
+            </button>
+            <button
+              onClick={() => moveOverlay('left')}
+              className="bg-yellow-600 text-white p-2 rounded-full shadow"
+            >
+              ←
+            </button>
+            <button
+              onClick={() => moveOverlay('right')}
+              className="bg-yellow-600 text-white p-2 rounded-full shadow"
+            >
+              →
+            </button>
+          </div>
+
+          <button onClick={() => handleExport(selectedNft, selectedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)}>Download Image</button>
+
+          
+          <button onClick={() => handleCopyToClipboard(selectedNft, selectedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)}>Copy to Clipboard</button>
         </>
         )}
       </div>
