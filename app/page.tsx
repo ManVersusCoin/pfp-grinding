@@ -1,39 +1,25 @@
-import { MosaicGenerator } from "@/components/mosaic-generator"
-import type { Metadata } from "next"
+import Link from 'next/link'
 
-export const metadata: Metadata = {
-  title: "Share my bag - Create Beautiful NFT Mosaics",
-  description: "Easily create and share mosaics of your favorite NFTs.",
-  icons: {
-    icon: "/bear-logo.png",
-    apple: "/bear-logo.png",
-  },
-  openGraph: {
-    type: "website",
-    title: "Share my NFT bag",
-    description: "Easily create and share mosaics of your favorite NFTs.",
-    images: [
-      {
-        url: "/bear-logo.png",
-        width: 800,
-        height: 800,
-        alt: "NFT Mosaic Generator",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Share my NFT bag",
-    description: "Easily create and share mosaics of your favorite NFTs.",
-    images: ["/bear-logo.png"],
-  },
-}
-
-export default function Home() {
+export default function HomePage() {
   return (
-    <main className="container mx-auto py-8 px-4 mb-8">
-      <MosaicGenerator />
+    <main className="min-h-screen flex flex-col items-center justify-center p-8 bg-gray-50">
+      <h1 className="text-3xl font-bold mb-8">Welcome to PFP Tools</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
+        <Link
+          href="/share"
+          className="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition-all border border-gray-200"
+        >
+          <h2 className="text-xl font-semibold mb-2">👜 Share my Bag</h2>
+          <p className="text-gray-600">Display your NFT collection layout beautifully.</p>
+        </Link>
+        <Link
+          href="/grind"
+          className="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition-all border border-gray-200"
+        >
+          <h2 className="text-xl font-semibold mb-2">🎨 PFP Grinder</h2>
+          <p className="text-gray-600">Customize your favorite NFT with overlays and backgrounds.</p>
+        </Link>
+      </div>
     </main>
   )
 }
-

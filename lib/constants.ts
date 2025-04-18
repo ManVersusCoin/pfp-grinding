@@ -1,4 +1,5 @@
-// Make sure the export is properly defined
+// Ensure the export is properly defined to avoid issues with dependency resolution
+export {};
 
 /*
 export const SUPPORTED_CHAINS = [
