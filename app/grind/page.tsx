@@ -259,21 +259,23 @@ export default function GrindPage() {
             </div>
 
             <div className="flex gap-2 mt-4">
-              <button onClick={() => handleRotate('left')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↺</button>
-              <button onClick={() => handleRotate('right')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↻</button>
-              <button onClick={handleIncreaseSize} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">+</button>
-              <button onClick={handleDecreaseSize} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">-</button>
-              <button onClick={() => moveOverlay('up')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↑</button>
-              <button onClick={() => moveOverlay('down')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↓</button>
-              <button onClick={() => moveOverlay('left')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">←</button>
-              <button onClick={() => moveOverlay('right')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">→</button>
+              {/*
+              <button onClick={() => handleRotate('left')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↺</button>
+              <button onClick={() => handleRotate('right')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↻</button>
+              */}
+              <button onClick={handleIncreaseSize} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">+</button>
+              <button onClick={handleDecreaseSize} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">-</button>
+              <button onClick={() => moveOverlay('up')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↑</button>
+              <button onClick={() => moveOverlay('down')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↓</button>
+              <button onClick={() => moveOverlay('left')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">←</button>
+              <button onClick={() => moveOverlay('right')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">→</button>
             </div>
             
-            <Button onClick={() => handleExport(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)} className="flex-1">
+            <Button onClick={() => handleExport(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)} className="w-1/2 my-1">
                 <DownloadIcon className="mr-2 h-4 w-4" />
                 Download
               </Button>
-              <Button onClick={() => handleCopyToClipboard(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)} className="flex-1">
+              <Button onClick={() => handleCopyToClipboard(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)} className="w-1/2 my-1">
                 <Copy className="mr-2 h-4 w-4" />
                 Copy to Clipboard
               </Button>
