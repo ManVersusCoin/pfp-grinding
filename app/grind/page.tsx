@@ -183,9 +183,10 @@ export default function GrindPage() {
     setWalletAddress(e.target.value)
   }
   const filteredNFTs = nfts.filter((nft) =>
-    nft.collectionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    nft.tokenId.toString().includes(searchTerm)
-  )
+    (nft.collectionName ? nft.collectionName.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+    (nft.tokenId ? nft.tokenId.toString().includes(searchTerm) : false)
+  );
+  
   const handleFetchNFTs = async () => {
     if (!walletAddress) {
       setError('Please enter a wallet address')
