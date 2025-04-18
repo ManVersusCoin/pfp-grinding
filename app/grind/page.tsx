@@ -190,7 +190,7 @@ export default function GrindPage() {
     setError(null);
     try {
       const { data, success, error } = await fetchNFTs([walletAddress], selectedChains);
-      if (success) setNfts(data.filter(nft => !nft.mediaUrl || !nft.mediaUrl.endsWith('.mp4'))); // Exclure les vidéos
+      if (success) setNfts(data.filter(nft => !nft.imageUrl || !nft.imageUrl.endsWith('.mp4'))); // Exclude videos
       else setError(error || 'An error occurred while fetching NFTs');
     } catch (err) {
       setError('An error occurred while fetching NFTs');
