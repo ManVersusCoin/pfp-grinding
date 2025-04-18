@@ -12,7 +12,13 @@ import { SUPPORTED_CHAINS } from '@/lib/constants'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select } from "@/components/ui/select"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
@@ -80,17 +86,18 @@ export default function GrindPage() {
 
         <div className="mb-4">
           <Label htmlFor="blockchain-select" className="block text-lg font-medium">Select Blockchain</Label>
-          <Select
-            id="blockchain-select"
-            value={selectedChains[0]}
-            onChange={handleChainsChange}
-          >
-            {SUPPORTED_CHAINS.map((chain) => (
-              <option key={chain.id} value={chain.id}>
-                {chain.name}
-              </option>
-            ))}
-          </Select>
+          <Select value={selectedChains[0]} onValueChange={(value) => setSelectedChains([value])}>
+            <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a blockchain" />
+            </SelectTrigger>
+            <SelectContent>
+                {SUPPORTED_CHAINS.map((chain) => (
+                <SelectItem key={chain.id} value={chain.id}>
+                    {chain.name}
+                </SelectItem>
+                ))}
+            </SelectContent>
+            </Select>
         </div>
 
         <Button

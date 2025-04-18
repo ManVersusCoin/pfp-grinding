@@ -11,22 +11,18 @@ export function EditableOverlay({ src }: Props) {
   const [rotation, setRotation] = useState(0)
 
   const handleRotate = () => {
-    
     setRotation((prev) => (prev + 2) % 360)
   }
 
   return (
     <div className="relative">
-      {/* Bouton de rotation */}
       <button
         onClick={handleRotate}
-        className="absolute top-0 right-0 bg-gray-500 text-white p-2 rounded-full"
-        style={{ zIndex: 10 }}
+        className="absolute -top-4 -right-4 bg-blue-600 text-white p-1 rounded-full shadow z-10"
       >
-        Rotate
+        ↻
       </button>
 
-      {/* Rnd composant pour gérer le redimensionnement et le déplacement */}
       <Rnd
         default={{
           x: 100,
@@ -39,6 +35,19 @@ export function EditableOverlay({ src }: Props) {
         lockAspectRatio
         style={{
           transform: `rotate(${rotation}deg)`,
+          border: '2px dashed #ccc',
+        }}
+        resizeHandleStyles={{
+          bottomRight: {
+            width: '12px',
+            height: '12px',
+            background: '#333',
+            borderRadius: '2px',
+            position: 'absolute',
+            right: '0',
+            bottom: '0',
+            cursor: 'se-resize',
+          },
         }}
       >
         <img
