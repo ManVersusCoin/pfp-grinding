@@ -1,7 +1,7 @@
 // app/grind/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { BackgroundPicker } from '@/components/BackgroundPicker'
 import { EditableOverlay } from '@/components/EditableOverlay'
 import { ExportButtons } from '@/components/ExportButtons'
@@ -143,6 +143,7 @@ export default function GrindPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const nftListRef = useRef<HTMLDivElement>(null);
 
   const proxiedNFT = selectedNft ? `/api/proxy?url=${encodeURIComponent(selectedNft)}` : null;
   const proxiedOverlay = selectedOverlay;
@@ -177,8 +178,9 @@ export default function GrindPage() {
   };
 
   const filteredNFTs = nfts.filter((nft) =>
-    (nft.collectionName ? nft.collectionName.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
-    (nft.tokenId ? nft.tokenId.toString().includes(searchTerm) : false)
+    (nft.collection ? nft.collection.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+    (nft.tokenId ? nft.tokenId.toString().includes(searchTerm) : false) ||
+    (nft.name ? nft.name.toLowerCase().includes(searchTerm.toLowerCase()) : false)
   );
 
   const handleFetchNFTs = async () => {
@@ -190,7 +192,9 @@ export default function GrindPage() {
     setError(null);
     try {
       const { data, success, error } = await fetchNFTs([walletAddress], selectedChains);
-      if (success) setNfts(data.filter(nft => !nft.imageUrl || !nft.imageUrl.endsWith('.mp4'))); // Exclude videos
+      console.log("-----NFTS-----")
+      console.log(data);
+      if (success) setNfts(data.filter(nft => !nft.image || !nft.image.endsWith('.mp4'))); // Exclude videos
       else setError(error || 'An error occurred while fetching NFTs');
     } catch (err) {
       setError('An error occurred while fetching NFTs');
@@ -279,11 +283,11 @@ export default function GrindPage() {
         </div>
       </div>
 
-      <div className="w-1/2 overflow-y-auto max-h-screen">
+      <div className="w-1/2 overflow-y-auto max-h-screen nft-scroll-area" ref={nftListRef}>
         <h2 className="text-xl font-bold mb-4">Select Your NFT</h2>
 
         {/* Search Bar */}
-        <div className="mb-4">
+        <div className="mb-4 px-1">
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -295,16 +299,16 @@ export default function GrindPage() {
         {filteredNFTs.length > 0 ? (
           <div className="space-y-4">
             {filteredNFTs.map((nft) => (
-              <LazyLoad key={nft.tokenId} height={80} offset={100} once>
-                <div onClick={() => setSelectedNft(nft.imageUrl)} className="flex items-center cursor-pointer">
+              <LazyLoad key={nft.id} height={50} offset={50} once scrollContainer=".nft-scroll-area">
+                <div onClick={() => setSelectedNft(nft.image)} className="flex items-center cursor-pointer">
                   <img
-                    src={nft.imageUrl}
+                    src={nft.image}
                     alt={nft.tokenId}
                     className="w-16 h-16 object-cover rounded-full mr-4"
                   />
                   <div>
-                    <h4 className="text-sm font-semibold">{nft.collectionName}</h4>
-                    <p className="text-xs text-gray-500">{nft.tokenId}</p>
+                    <h4 className="text-sm font-semibold">{nft.collection}</h4>
+                    <p className="text-xs text-gray-500">{nft.name} - {nft.tokenId}</p>
                   </div>
                 </div>
               </LazyLoad>

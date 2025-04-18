@@ -156,7 +156,7 @@ async function fetchNFTsForWallet(
     }
   }
   return allNFTs.map((nft: any) => {
-    console.log(nft);
+    //console.log(nft);
     let imageUrl = '';
     const isVideo = nft.image?.contentType?.startsWith('video/') || nft.image?.contentType === 'mp4';
 
