@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { BackgroundPicker } from '@/components/BackgroundPicker'
 import { EditableOverlay } from '@/components/EditableOverlay'
 import { ExportButtons } from '@/components/ExportButtons'
+import { DownloadIcon, RefreshCw, Share2, AlertCircle, MoveHorizontal, ArrowUpDown, Copy, Check } from "lucide-react"
 import { NftSelector } from '@/components/NftSelector'
 import { OverlayPicker } from '@/components/OverlayPicker'
 import { fetchNFTs } from '@/app/actions/nft-actions'
@@ -229,7 +230,7 @@ export default function GrindPage() {
 
         {selectedNft && (
           <>
-            <BackgroundPicker value={backgroundColor} onChange={setBackgroundColor} />
+            
             <OverlayPicker onSelect={setSelectedOverlay} />
 
             <div id="canvas" className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg" style={{ backgroundColor }}>
@@ -267,9 +268,16 @@ export default function GrindPage() {
               <button onClick={() => moveOverlay('left')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">←</button>
               <button onClick={() => moveOverlay('right')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">→</button>
             </div>
-
-            <button onClick={() => handleExport(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)}>Download Image</button>
-            <button onClick={() => handleCopyToClipboard(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)}>Copy to Clipboard</button>
+            
+            <Button onClick={() => handleExport(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)} className="flex-1">
+                <DownloadIcon className="mr-2 h-4 w-4" />
+                Download
+              </Button>
+              <Button onClick={() => handleCopyToClipboard(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)} className="flex-1">
+                <Copy className="mr-2 h-4 w-4" />
+                Copy to Clipboard
+              </Button>
+            
           </>
         )}
       </div>
