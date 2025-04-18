@@ -27,57 +27,60 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 
 const generateCanvasImage = (
-    nftSrc: string,
-    overlaySrc: string | null,
-    overlayPosition: { x: number; y: number },
-    overlaySize: { width: number; height: number },
-    rotation: number,
-    backgroundColor: string
+  nftSrc: string,
+  overlaySrc: string | null,
+  overlayPosition: { x: number; y: number },
+  overlaySize: { width: number; height: number },
+  rotation: number,
+  backgroundColor: string
 ): Promise<HTMLCanvasElement> => {
-    return new Promise((resolve, reject) => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            reject(new Error("Could not get canvas context"));
-            return;
-        }
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return reject(new Error("Could not get canvas context"));
 
-        const nftImage = new Image();
-        nftImage.crossOrigin = "anonymous";
-        nftImage.onload = () => {
-            canvas.width = nftImage.width;
-            canvas.height = nftImage.height;
+    const nftImage = new Image();
+    nftImage.crossOrigin = "anonymous";
+    nftImage.onload = () => {
+      canvas.width = nftImage.width;
+      canvas.height = nftImage.height;
 
-            ctx.fillStyle = backgroundColor;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(nftImage, 0, 0);
+      
+      const scaleX = nftImage.width / 400;
+      const scaleY = nftImage.height / 400;
 
-            if (overlaySrc) {
-                const overlayImage = new Image();
-                overlayImage.crossOrigin = "anonymous";
-                overlayImage.onload = () => {
-                    ctx.save();
-                    ctx.translate(overlayPosition.x + overlaySize.width / 2, overlayPosition.y + overlaySize.height / 2);
-                    ctx.rotate((rotation * Math.PI) / 180);
-                    ctx.drawImage(
-                        overlayImage,
-                        -overlaySize.width / 2,
-                        -overlaySize.height / 2,
-                        overlaySize.width,
-                        overlaySize.height
-                    );
-                    ctx.restore();
-                    resolve(canvas);
-                };
-                overlayImage.onerror = (error) => reject(error);
-                overlayImage.src = overlaySrc;
-            } else {
-                resolve(canvas);
-            }
+      ctx.fillStyle = backgroundColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(nftImage, 0, 0);
+
+      if (overlaySrc) {
+        const overlayImage = new Image();
+        overlayImage.crossOrigin = "anonymous";
+        overlayImage.onload = () => {
+          ctx.save();
+
+          // Applique le scale aux positions
+          const scaledX = overlayPosition.x * scaleX;
+          const scaledY = overlayPosition.y * scaleY;
+          const scaledW = overlaySize.width * scaleX;
+          const scaledH = overlaySize.height * scaleY;
+
+          ctx.translate(scaledX + scaledW / 2, scaledY + scaledH / 2);
+          ctx.rotate((rotation * Math.PI) / 180);
+          ctx.drawImage(overlayImage, -scaledW / 2, -scaledH / 2, scaledW, scaledH);
+          ctx.restore();
+
+          resolve(canvas);
         };
-        nftImage.onerror = (error) => reject(error);
-        nftImage.src = nftSrc;
-    });
+        overlayImage.onerror = reject;
+        overlayImage.src = overlaySrc;
+      } else {
+        resolve(canvas);
+      }
+    };
+    nftImage.onerror = reject;
+    nftImage.src = nftSrc;
+  });
 };
 
 const handleExport = async (selectedNft: string, selectedOverlay: string | null, overlayPosition: { x: number, y: number }, overlaySize: { width: number, height: number }, rotation: number, backgroundColor: string) => {
@@ -233,18 +236,24 @@ export default function GrindPage() {
               <img src={proxiedNFT || ''} alt="Selected NFT" className="w-full h-full object-contain" />
               {selectedOverlay && (
                 <Rnd
-                  onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
-                  onResizeStop={(_, __, ref, ___, position) => {
-                    setOverlaySize({ width: parseInt(ref.style.width), height: parseInt(ref.style.height) })
-                    setOverlayPosition(position)
-                  }}
-                  bounds="window"
-                  enableResizing
-                  lockAspectRatio
-                  style={{ transform: `translate(${overlayPosition.x}px, ${overlayPosition.y}px) rotate(${rotation}deg)`, border: '2px dashed #ccc', position: 'absolute', width: overlaySize.width, height: overlaySize.height }}
-                >
-                  <img src={proxiedOverlay || ''} alt="Overlay" className="w-full h-full object-contain pointer-events-none" />
-                </Rnd>
+                position={overlayPosition}
+                size={overlaySize}
+                onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
+                onResizeStop={(_, __, ref, ___, position) => {
+                  setOverlaySize({ width: parseInt(ref.style.width), height: parseInt(ref.style.height) });
+                  setOverlayPosition(position);
+                }}
+                bounds="window"
+                enableResizing
+                lockAspectRatio
+                style={{
+                  border: '2px dashed #ccc',
+                  transform: `rotate(${rotation}deg)`, // rotation uniquement
+                  position: 'absolute',
+                }}
+              >
+                <img src={proxiedOverlay || ''} alt="Overlay" className="w-full h-full object-contain pointer-events-none" />
+              </Rnd>
               )}
             </div>
 
