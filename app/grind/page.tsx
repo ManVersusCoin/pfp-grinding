@@ -26,6 +26,7 @@ import { Rnd } from 'react-rnd'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
+import LazyLoad from 'react-lazyload'
 
 const generateCanvasImage = (
   nftSrc: string,
@@ -148,6 +149,7 @@ export default function GrindPage() {
   const [nfts, setNfts] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState<string>('')
 
   const proxiedNFT = selectedNft ? `/api/proxy?url=${encodeURIComponent(selectedNft)}` : null
   const proxiedOverlay = selectedOverlay
@@ -180,7 +182,10 @@ export default function GrindPage() {
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setWalletAddress(e.target.value)
   }
-
+  const filteredNFTs = nfts.filter((nft) =>
+    nft.collectionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    nft.tokenId.toString().includes(searchTerm)
+  )
   const handleFetchNFTs = async () => {
     if (!walletAddress) {
       setError('Please enter a wallet address')
@@ -290,6 +295,43 @@ export default function GrindPage() {
             </div>
 
       <div className="w-1/2 overflow-y-auto max-h-screen">
+
+      <h2 className="text-xl font-bold mb-4">Select Your NFT</h2>
+
+        {/* Search Bar */}
+        <div className="mb-4">
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by collection name or token ID"
+          />
+        </div>
+
+        {/* NFT Selector with Lazy Loading */}
+        {filteredNFTs.length > 0 ? (
+          <div className="space-y-4">
+            {filteredNFTs.map((nft) => (
+              <LazyLoad key={nft.tokenId} height={80} offset={100} once>
+                <div
+                  onClick={() => setSelectedNft(nft.imageUrl)}
+                  className="flex items-center cursor-pointer"
+                >
+                  <img
+                    src={nft.imageUrl}
+                    alt={nft.tokenId}
+                    className="w-16 h-16 object-cover rounded-full mr-4"
+                  />
+                  <div>
+                    <h4 className="text-sm font-semibold">{nft.collectionName}</h4>
+                    <p className="text-xs text-gray-500">{nft.tokenId}</p>
+                  </div>
+                </div>
+              </LazyLoad>
+            ))}
+          </div>
+        ) : (
+          <p>No NFTs found</p>
+        )}
         <h2 className="text-xl font-bold mb-4">Select Your NFT</h2>
         {nfts.length > 0 ? (
           <NftSelector nfts={nfts} onSelect={setSelectedNft} />
