@@ -101,7 +101,7 @@ const handleExport = async (selectedNft: string, selectedOverlay: string | null,
         link.click();
     } catch (error) {
         console.error("Error generating or downloading image:", error);
-        alert('Erreur lors de la génération ou du téléchargement de l\'image');
+        alert('Error generating or downloading image');
     }
 };
 
@@ -123,16 +123,16 @@ const handleCopyToClipboard = async (selectedNft: string, selectedOverlay: strin
                             [blob.type]: blob,
                         }),
                     ]);
-                    alert('Image copiée dans le presse-papier !');
+                    //alert('Image copiée dans le presse-papier !');
                 } catch (err) {
-                    alert('Erreur lors de la copie dans le presse-papier');
+                    alert('Error generating canvas for clipboard:');
                     console.error("Clipboard write error:", err);
                 }
             }
         }, 'image/png');
     } catch (error) {
         console.error("Error generating canvas for clipboard:", error);
-        alert('Erreur lors de la génération de l\'image pour le presse-papier');
+        alert('Error generating canvas for clipboard:');
     }
 };
 
@@ -201,88 +201,89 @@ export default function GrindPage() {
 
   return (
     <main className="container mx-auto flex p-4 gap-4">
-      <div className="w-1/2 flex flex-col gap-4">
-        <h1 className="text-2xl font-bold">🎨 PFP Grinder</h1>
+      <div className="w-1/2 flex flex-col gap-4 items-center">
+                <h1 className="text-2xl font-bold self-center">🎨 PFP Grinder</h1>
 
-        <div className="mb-4">
-          <Label htmlFor="wallet-address" className="block text-lg font-medium">Wallet Address</Label>
-          <Input id="wallet-address" type="text" value={walletAddress} onChange={handleAddressChange} placeholder="Enter wallet address" />
-        </div>
+                <div className="mb-4 w-full max-w-md">
+                    <Label htmlFor="wallet-address" className="block text-lg font-medium">Wallet Address</Label>
+                    <Input id="wallet-address" type="text" value={walletAddress} onChange={handleAddressChange} placeholder="Enter wallet address" className="w-full" />
+                </div>
 
-        <div className="mb-4">
-          <Label htmlFor="blockchain-select" className="block text-lg font-medium">Select Blockchain</Label>
-          <Select value={selectedChains[0]} onValueChange={(value) => setSelectedChains([value])}>
-            <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a blockchain" />
-            </SelectTrigger>
-            <SelectContent>
-                {SUPPORTED_CHAINS.map((chain) => (
-                <SelectItem key={chain.id} value={chain.id}>{chain.name}</SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        </div>
+                <div className="mb-4 w-full max-w-md">
+                    <Label htmlFor="blockchain-select" className="block text-lg font-medium">Select Blockchain</Label>
+                    <Select value={selectedChains[0]} onValueChange={(value) => setSelectedChains([value])}>
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select a blockchain" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {SUPPORTED_CHAINS.map((chain) => (
+                                <SelectItem key={chain.id} value={chain.id}>{chain.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
 
-        <Button onClick={handleFetchNFTs} className="w-full">Load NFTs</Button>
+                <Button onClick={handleFetchNFTs} className="w-full max-w-md">Load NFTs</Button>
 
-        {loading && <p>Loading NFTs...</p>}
-        {error && <p className="text-red-500">{error}</p>}
+                {loading && <p>Loading NFTs...</p>}
+                {error && <p className="text-red-500">Error: {error}</p>}
 
-        {selectedNft && (
-          <>
-            
-            <OverlayPicker onSelect={setSelectedOverlay} />
+                {selectedNft && (
+                    <div className="flex flex-col items-center gap-4 w-full">
+                        <BackgroundPicker value={backgroundColor} onChange={setBackgroundColor} />
+                        <OverlayPicker onSelect={setSelectedOverlay} />
 
-            <div id="canvas" className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg" style={{ backgroundColor }}>
-              <img src={proxiedNFT || ''} alt="Selected NFT" className="w-full h-full object-contain" />
-              {selectedOverlay && (
-                <Rnd
-                position={overlayPosition}
-                size={overlaySize}
-                onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
-                onResizeStop={(_, __, ref, ___, position) => {
-                  setOverlaySize({ width: parseInt(ref.style.width), height: parseInt(ref.style.height) });
-                  setOverlayPosition(position);
-                }}
-                bounds="window"
-                enableResizing
-                lockAspectRatio
-                style={{
-                  border: '2px dashed #ccc',
-                  transform: `rotate(${rotation}deg)`, // rotation uniquement
-                  position: 'absolute',
-                }}
-              >
-                <img src={proxiedOverlay || ''} alt="Overlay" className="w-full h-full object-contain pointer-events-none" />
-              </Rnd>
-              )}
+                        <div id="canvas" className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg" style={{ backgroundColor }}>
+                            <img src={proxiedNFT || ''} alt="Selected NFT" className="w-full h-full object-contain" />
+                            {selectedOverlay && (
+                                <Rnd
+                                    position={overlayPosition}
+                                    size={overlaySize}
+                                    onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
+                                    onResizeStop={(_, __, ref, ___, position) => {
+                                        setOverlaySize({ width: parseInt(ref.style.width), height: parseInt(ref.style.height) });
+                                        setOverlayPosition(position);
+                                    }}
+                                    //bounds="window"
+                                    enableResizing
+                                    lockAspectRatio
+                                    style={{
+                                        border: '2px dashed #ccc',
+                                        transform: `rotate(${rotation}deg)`,
+                                        position: 'absolute',
+                                    }}
+                                >
+                                    <img src={proxiedOverlay || ''} alt="Overlay" className="w-full h-full object-contain pointer-events-none" />
+                                </Rnd>
+                            )}
+                        </div>
+
+                        <div className="flex gap-2 mt-4">
+                            {/*
+                            <button onClick={() => handleRotate('left')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↺</button>
+                            <button onClick={() => handleRotate('right')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↻</button>
+                            */}
+                            <button onClick={handleIncreaseSize} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">+</button>
+                            <button onClick={handleDecreaseSize} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">-</button>
+                            <button onClick={() => moveOverlay('up')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↑</button>
+                            <button onClick={() => moveOverlay('down')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↓</button>
+                            <button onClick={() => moveOverlay('left')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">←</button>
+                            <button onClick={() => moveOverlay('right')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">→</button>
+                        </div>
+
+                        <div className="flex w-full max-w-md gap-2 mt-2">
+                            <Button onClick={() => handleExport(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)} className="w-1/2">
+                                <DownloadIcon className="mr-2 h-4 w-4" />
+                                Download
+                            </Button>
+                            <Button onClick={() => handleCopyToClipboard(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)} className="w-1/2">
+                                <Copy className="mr-2 h-4 w-4" />
+                                Copy to Clipboard
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
-
-            <div className="flex gap-2 mt-4">
-              {/*
-              <button onClick={() => handleRotate('left')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↺</button>
-              <button onClick={() => handleRotate('right')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↻</button>
-              */}
-              <button onClick={handleIncreaseSize} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">+</button>
-              <button onClick={handleDecreaseSize} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">-</button>
-              <button onClick={() => moveOverlay('up')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↑</button>
-              <button onClick={() => moveOverlay('down')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↓</button>
-              <button onClick={() => moveOverlay('left')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">←</button>
-              <button onClick={() => moveOverlay('right')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">→</button>
-            </div>
-            
-            <Button onClick={() => handleExport(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)} className="w-1/2 my-1">
-                <DownloadIcon className="mr-2 h-4 w-4" />
-                Download
-              </Button>
-              <Button onClick={() => handleCopyToClipboard(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)} className="w-1/2 my-1">
-                <Copy className="mr-2 h-4 w-4" />
-                Copy to Clipboard
-              </Button>
-            
-          </>
-        )}
-      </div>
 
       <div className="w-1/2 overflow-y-auto max-h-screen">
         <h2 className="text-xl font-bold mb-4">Select Your NFT</h2>
