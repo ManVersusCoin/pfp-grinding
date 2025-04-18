@@ -1,37 +1,56 @@
-'use client'
+// components/NftSelector.tsx
+import { useState } from 'react'
+import { useAccount } from '@/hooks/use-account'
+import { useNFTs } from '@/hooks/use-nfts'
 
-import { useEffect, useState } from 'react'
-import { useAccount, useNFTs } from '@/hooks/use-nfts'
+export function NftSelector({ onSelect }: { onSelect: (nft: string) => void }) {
+  const { address, updateAddress } = useAccount()  // Récupère le hook pour gérer l'adresse manuelle
+  const [inputAddress, setInputAddress] = useState<string>(address || '') // état pour le champ d'entrée
+  const { nfts, loading, error } = useNFTs(address ? [address] : [])
 
-type Props = {
-  onSelect: (url: string) => void
-}
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputAddress(e.target.value)
+  }
 
-export function NftSelector({ onSelect }: Props) {
-  const { address } = useAccount()
-  const { nfts, loading } = useNFTs(address)
-  const [selected, setSelected] = useState<string | null>(null)
+  const handleAddressSubmit = () => {
+    updateAddress(inputAddress)  // Met à jour l'adresse avec l'entrée de l'utilisateur
+  }
 
-  useEffect(() => {
-    if (selected) onSelect(selected)
-  }, [selected])
-
-  if (loading) return <p>Loading NFTs...</p>
-  if (!nfts?.length) return <p>No NFTs found. Connect your wallet.</p>
+  if (loading) return <div>Loading NFTs...</div>
+  if (error) return <div>Error: {error}</div>
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {nfts.map((nft) => (
-        <img
-          key={nft.tokenId}
-          src={nft.image}
-          alt="NFT"
-          className={`cursor-pointer rounded-xl border-4 transition-all ${
-            selected === nft.image ? 'border-blue-500' : 'border-transparent'
-          }`}
-          onClick={() => setSelected(nft.image)}
+    <div>
+      <h2>Select Your NFT</h2>
+
+      {/* Champ de saisie d'adresse */}
+      <div className="mb-4">
+        <input
+          type="text"
+          value={inputAddress}
+          onChange={handleAddressChange}
+          placeholder="Enter wallet address"
+          className="p-2 border rounded-md"
         />
-      ))}
+        <button
+          onClick={handleAddressSubmit}
+          className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md"
+        >
+          Load NFTs
+        </button>
+      </div>
+
+      {/* Affichage des NFTs */}
+      {nfts.length > 0 ? (
+        nfts.map((nft) => (
+          <div key={nft.id} onClick={() => onSelect(nft.image)} className="cursor-pointer">
+            <img src={nft.image} alt={nft.name} width={100} height={100} />
+            <p>{nft.name}</p>
+          </div>
+        ))
+      ) : (
+        <p>No NFTs found</p>
+      )}
     </div>
   )
 }
