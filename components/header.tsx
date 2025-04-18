@@ -1,5 +1,6 @@
 import Image from "next/image"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { TopNav } from "@/components/TopNav" // Import TopNav ici
 
 export function Header() {
   return (
@@ -9,11 +10,11 @@ export function Header() {
           <Image src="/bear-logo.png" alt="Bear Chef Logo" width={40} height={40} className="rounded-full" />
           <h1 className="text-xl font-bold md:text-2xl">Share my NFT bag</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
+        <div className="flex items-center gap-6"> {/* Augmenté pour laisser de l'espace */}
+          <TopNav />  {/* Ajout du TopNav à gauche */}
+          <ThemeToggle /> {/* Le ThemeToggle à droite */}
         </div>
       </div>
     </header>
   )
 }
-

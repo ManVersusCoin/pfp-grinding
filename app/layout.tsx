@@ -4,7 +4,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
-import { TopNav } from "@/components/TopNav"
+
 
 const robotoMono = Roboto_Mono({
   subsets: ["latin"],
@@ -26,7 +26,7 @@ export default function RootLayout({
       <body className={`${robotoMono.className} flex min-h-screen flex-col`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Header />
-          <TopNav />
+
           <div className="flex-1">{children}</div>
           <Footer />
         </ThemeProvider>

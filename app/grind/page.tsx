@@ -146,7 +146,7 @@ export default function GrindPage() {
   const [error, setError] = useState<string | null>(null)
 
   const proxiedNFT = selectedNft ? `/api/proxy?url=${encodeURIComponent(selectedNft)}` : null
-  const proxiedOverlay = selectedOverlay ? `/api/proxy?url=${encodeURIComponent(selectedOverlay)}` : null
+  const proxiedOverlay = selectedOverlay
 
   const handleRotate = (direction: 'left' | 'right') => {
     setRotation((prev) => (direction === 'left' ? (prev - 2) % 360 : (prev + 2) % 360))
