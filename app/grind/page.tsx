@@ -25,6 +25,104 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 
+const generateCanvasImage = (
+    nftSrc: string,
+    overlaySrc: string | null,
+    overlayPosition: { x: number; y: number },
+    overlaySize: { width: number; height: number },
+    rotation: number,
+    backgroundColor: string
+  ) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+  
+    const nftImage = new Image();
+    nftImage.src = nftSrc;
+    nftImage.onload = () => {
+      // Définir la taille du canvas en fonction de l'image NFT
+      canvas.width = nftImage.width;
+      canvas.height = nftImage.height;
+  
+      // Dessiner le NFT sur le canvas
+      ctx.fillStyle = backgroundColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(nftImage, 0, 0);
+  
+      // Si un overlay est sélectionné, on l'ajoute au canvas
+      if (overlaySrc) {
+        const overlayImage = new Image();
+        overlayImage.src = overlaySrc;
+        overlayImage.onload = () => {
+          // Appliquer la rotation à l'overlay
+          ctx.save();
+          ctx.translate(overlayPosition.x + overlaySize.width / 2, overlayPosition.y + overlaySize.height / 2);
+          ctx.rotate((rotation * Math.PI) / 180);
+          ctx.drawImage(
+            overlayImage,
+            -overlaySize.width / 2,
+            -overlaySize.height / 2,
+            overlaySize.width,
+            overlaySize.height
+          );
+          ctx.restore();
+        };
+      }
+    };
+  
+    return canvas;
+  };
+  
+  // Fonction pour gérer l'exportation et la copie dans le presse-papier
+  const handleExport = () => {
+    const canvas = generateCanvasImage(
+      selectedNft,
+      selectedOverlay,
+      overlayPosition,
+      overlaySize,
+      rotation,
+      backgroundColor
+    );
+  
+    // Convertir le canvas en URL de l'image
+    const dataUrl = canvas.toDataURL('image/png');
+  
+    // Créer un lien de téléchargement pour l'image générée
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'combined-image.png';
+    link.click();
+  };
+  
+  // Fonction pour copier l'image dans le presse-papier
+  const handleCopyToClipboard = async () => {
+    const canvas = generateCanvasImage(
+      selectedNft,
+      selectedOverlay,
+      overlayPosition,
+      overlaySize,
+      rotation,
+      backgroundColor
+    );
+  
+    // Convertir le canvas en Blob et essayer de copier dans le presse-papier
+    canvas.toBlob(async (blob) => {
+      try {
+        if (blob) {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              [blob.type]: blob, // Utiliser le type de l'image comme MIME type
+            }),
+          ]);
+          alert('Image copiée dans le presse-papier !');
+        }
+      } catch (err) {
+        alert('Erreur lors de la copie dans le presse-papier');
+      }
+    }, 'image/png');
+  };
+
+
 export default function GrindPage() {
   const [selectedNft, setSelectedNft] = useState<string | null>(null)
   const [backgroundColor, setBackgroundColor] = useState<string>('#ffffff')
@@ -132,60 +230,52 @@ export default function GrindPage() {
           >
             <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain" />
             {selectedOverlay && (
-            <div
-                className="absolute"
-                style={{
-                left: overlayPosition.x,
-                top: overlayPosition.y,
-                width: overlaySize.width,
-                height: overlaySize.height,
-                transform: `rotate(${rotation}deg)`,
-                zIndex: 10,
-                }}
-            >
-                <button
-                onClick={handleRotate}
-                className="absolute -top-6 -right-6 bg-blue-600 text-white p-1 rounded-full shadow z-20"
-                >
-                ↻
-                </button>
+            <div className="relative">
                 <Rnd
                 size={overlaySize}
-                position={{ x: 0, y: 0 }}
-                onDragStop={(_, d) =>
-                    setOverlayPosition({
-                    x: overlayPosition.x + d.x,
-                    y: overlayPosition.y + d.y,
-                    })
-                }
+                position={overlayPosition}
+                onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
                 onResizeStop={(_, __, ref, ___, position) => {
                     setOverlaySize({
                     width: parseInt(ref.style.width),
                     height: parseInt(ref.style.height),
                     })
-                    setOverlayPosition({
-                    x: overlayPosition.x + position.x,
-                    y: overlayPosition.y + position.y,
-                    })
+                    setOverlayPosition(position)
                 }}
                 bounds="#canvas"
                 enableResizing
                 lockAspectRatio
                 style={{
-                    width: '100%',
-                    height: '100%',
+                    transform: `rotate(${rotation}deg)`,
                     border: '2px dashed #ccc',
                     zIndex: 10,
                 }}
                 >
-                <img
+                <div className="w-full h-full relative">
+                    <img
                     src={selectedOverlay}
                     alt="Overlay"
                     className="w-full h-full object-contain pointer-events-none"
-                />
+                    />
+                    <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
+                    <button
+                        onClick={() => setRotation((prev) => (prev - 2 + 360) % 360)}
+                        className="bg-blue-600 text-white px-2 py-1 rounded-full shadow"
+                    >
+                        ↺
+                    </button>
+                    <button
+                        onClick={() => setRotation((prev) => (prev + 2) % 360)}
+                        className="bg-blue-600 text-white px-2 py-1 rounded-full shadow"
+                    >
+                        ↻
+                    </button>
+                    </div>
+                </div>
                 </Rnd>
             </div>
             )}
+
 
           </div>
 
@@ -218,6 +308,11 @@ export default function GrindPage() {
           </div>
 
           <ExportButtons exportTargetId="export-version" />
+
+          <Button onClick={handleExport}>Download Image</Button>
+
+            
+            <Button onClick={handleCopyToClipboard}>Copy to Clipboard</Button>
           </>
         )}
       </div>
