@@ -1,4 +1,3 @@
-// app/grind/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -56,6 +55,7 @@ export default function GrindPage() {
     <main className="flex flex-col items-center p-4 gap-4">
       <h1 className="text-2xl font-bold">🎨 PFP Grinder</h1>
 
+      {/* Address and Blockchain Form */}
       <div className="mb-4">
         <label htmlFor="wallet-address" className="block text-lg font-medium">Wallet Address</label>
         <input
@@ -91,24 +91,36 @@ export default function GrindPage() {
         Load NFTs
       </button>
 
+      {/* Display Loading and Error States */}
       {loading && <p>Loading NFTs...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
+      {/* NFT Selection */}
       {nfts.length > 0 && (
         <>
-          <BackgroundPicker value={backgroundColor} onChange={setBackgroundColor} />
-          <OverlayPicker onSelect={setSelectedOverlay} />
-
-          <div
-            id="canvas"
-            className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg"
-            style={{ backgroundColor }}
-          >
-            <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain" />
-            {selectedOverlay && <EditableOverlay src={selectedOverlay} />}
+          <div className="mb-4">
+            <label className="block text-lg font-medium">Select Your NFT</label>
+            <NftSelector nfts={nfts} onSelect={setSelectedNft} />
           </div>
 
-          <ExportButtons exportTargetId="canvas" />
+          {/* NFT Editing */}
+          {selectedNft && (
+            <>
+              <BackgroundPicker value={backgroundColor} onChange={setBackgroundColor} />
+              <OverlayPicker onSelect={setSelectedOverlay} />
+
+              <div
+                id="canvas"
+                className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg"
+                style={{ backgroundColor }}
+              >
+                <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain" />
+                {selectedOverlay && <EditableOverlay src={selectedOverlay} />}
+              </div>
+
+              <ExportButtons exportTargetId="canvas" />
+            </>
+          )}
         </>
       )}
     </main>
