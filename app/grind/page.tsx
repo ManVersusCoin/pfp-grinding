@@ -53,7 +53,7 @@ export default function GrindPage() {
   }
 
   return (
-    <main className="flex p-4 gap-4">
+    <main className="container mx-auto flex p-4 gap-4">
       {/* Left Column (parameters and actions) */}
       <div className="w-1/2 flex flex-col gap-4">
         <h1 className="text-2xl font-bold">🎨 PFP Grinder</h1>

@@ -8,7 +8,7 @@ type NftSelectorProps = {
 
 export const NftSelector: React.FC<NftSelectorProps> = ({ nfts, onSelect }) => {
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-4 gap-4">
       {nfts.map((nft) => (
         <div
           key={nft.id}
