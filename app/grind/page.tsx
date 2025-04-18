@@ -230,90 +230,59 @@ export default function GrindPage() {
           >
             <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain" />
             {selectedOverlay && (
-            <div className="relative">
-                <Rnd
-                size={overlaySize}
-                position={overlayPosition}
-                onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
-                onResizeStop={(_, __, ref, ___, position) => {
-                    setOverlaySize({
-                    width: parseInt(ref.style.width),
-                    height: parseInt(ref.style.height),
-                    })
-                    setOverlayPosition(position)
-                }}
-                bounds="#canvas"
-                enableResizing
-                lockAspectRatio
-                style={{
-                    transform: `rotate(${rotation}deg)`,
-                    border: '2px dashed #ccc',
-                    zIndex: 10,
-                }}
-                >
-                <div className="w-full h-full relative">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative">
+                  {/* Boutons de rotation */}
+                  <button
+                    onClick={() => handleRotate('left')}
+                    className="absolute top-0 left-1/4 bg-blue-600 text-white p-1 rounded-full shadow z-10"
+                  >
+                    ↺
+                  </button>
+                  <button
+                    onClick={() => handleRotate('right')}
+                    className="absolute top-0 right-1/4 bg-blue-600 text-white p-1 rounded-full shadow z-10"
+                  >
+                    ↻
+                  </button>
+
+                  {/* Rnd pour overlay */}
+                  <Rnd
+                    size={overlaySize}
+                    position={overlayPosition}
+                    onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
+                    onResizeStop={(_, __, ref, ___, position) => {
+                      setOverlaySize({
+                        width: parseInt(ref.style.width),
+                        height: parseInt(ref.style.height),
+                      });
+                      setOverlayPosition(position);
+                    }}
+                    bounds="window"
+                    enableResizing
+                    lockAspectRatio
+                    style={{
+                      transform: `rotate(${rotation}deg)`,
+                      border: '2px dashed #ccc',
+                    }}
+                  >
                     <img
-                    src={selectedOverlay}
-                    alt="Overlay"
-                    className="w-full h-full object-contain pointer-events-none"
+                      src={selectedOverlay}
+                      alt="Overlay"
+                      className="w-full h-full object-contain pointer-events-none"
                     />
-                    <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
-                    <button
-                        onClick={() => setRotation((prev) => (prev - 2 + 360) % 360)}
-                        className="bg-blue-600 text-white px-2 py-1 rounded-full shadow"
-                    >
-                        ↺
-                    </button>
-                    <button
-                        onClick={() => setRotation((prev) => (prev + 2) % 360)}
-                        className="bg-blue-600 text-white px-2 py-1 rounded-full shadow"
-                    >
-                        ↻
-                    </button>
-                    </div>
+                  </Rnd>
                 </div>
-                </Rnd>
-            </div>
+              </div>
             )}
-
-
           </div>
 
-            {/* Static export version */}
-          <div id="export-version" className="absolute opacity-0 pointer-events-none">
-            <div
-              className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg"
-              style={{ backgroundColor }}
-            >
-              <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain absolute inset-0" />
-              {selectedOverlay && (
-                <div
-                  className="absolute"
-                  style={{
-                    left: overlayPosition.x,
-                    top: overlayPosition.y,
-                    width: overlaySize.width,
-                    height: overlaySize.height,
-                    transform: `rotate(${rotation}deg)`,
-                  }}
-                >
-                  <img
-                    src={selectedOverlay}
-                    alt="Overlay"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <ExportButtons exportTargetId="export-version" />
-
+          {/* Exportation */}
           <Button onClick={handleExport}>Download Image</Button>
 
-            
-            <Button onClick={handleCopyToClipboard}>Copy to Clipboard</Button>
-          </>
+          {/* Copie dans le presse-papier */}
+          <Button onClick={handleCopyToClipboard}>Copy to Clipboard</Button>
+        </>
         )}
       </div>
 
