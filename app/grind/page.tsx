@@ -32,97 +32,104 @@ const generateCanvasImage = (
     overlaySize: { width: number; height: number },
     rotation: number,
     backgroundColor: string
-  ) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-  
-    const nftImage = new Image();
-    nftImage.src = nftSrc;
-    nftImage.onload = () => {
-      // Définir la taille du canvas en fonction de l'image NFT
-      canvas.width = nftImage.width;
-      canvas.height = nftImage.height;
-  
-      // Dessiner le NFT sur le canvas
-      ctx.fillStyle = backgroundColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(nftImage, 0, 0);
-  
-      // Si un overlay est sélectionné, on l'ajoute au canvas
-      if (overlaySrc) {
-        const overlayImage = new Image();
-        overlayImage.src = overlaySrc;
-        overlayImage.onload = () => {
-          // Appliquer la rotation à l'overlay
-          ctx.save();
-          ctx.translate(overlayPosition.x + overlaySize.width / 2, overlayPosition.y + overlaySize.height / 2);
-          ctx.rotate((rotation * Math.PI) / 180);
-          ctx.drawImage(
-            overlayImage,
-            -overlaySize.width / 2,
-            -overlaySize.height / 2,
-            overlaySize.width,
-            overlaySize.height
-          );
-          ctx.restore();
-        };
-      }
-    };
-  
-    return canvas;
-  };
-  
-  // Fonction pour gérer l'exportation et la copie dans le presse-papier
-  const handleExport = (selectedNft: string, selectedOverlay: string | null, overlayPosition: { x: number, y: number }, overlaySize: { width: number, height: number }, rotation: number, backgroundColor: string) => {
-    const canvas = generateCanvasImage(
-      selectedNft,
-      selectedOverlay,
-      overlayPosition,
-      overlaySize,
-      rotation,
-      backgroundColor
-    );
-  
-    // Convertir le canvas en URL de l'image
-    const dataUrl = canvas.toDataURL('image/png');
-  
-    // Créer un lien de téléchargement pour l'image générée
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = 'combined-image.png';
-    link.click();
-  };
-  
-  // Fonction pour copier l'image dans le presse-papier
-  const handleCopyToClipboard = async (selectedNft: string, selectedOverlay: string | null, overlayPosition: { x: number, y: number }, overlaySize: { width: number, height: number }, rotation: number, backgroundColor: string) => {
-    const canvas = generateCanvasImage(
-      selectedNft,
-      selectedOverlay,
-      overlayPosition,
-      overlaySize,
-      rotation,
-      backgroundColor
-    );
-  
-    // Convertir le canvas en Blob et essayer de copier dans le presse-papier
-    canvas.toBlob(async (blob) => {
-      try {
-        if (blob) {
-          await navigator.clipboard.write([
-            new ClipboardItem({
-              [blob.type]: blob, // Utiliser le type de l'image comme MIME type
-            }),
-          ]);
-          alert('Image copiée dans le presse-papier !');
+): Promise<HTMLCanvasElement> => {
+    return new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            reject(new Error("Could not get canvas context"));
+            return;
         }
-      } catch (err) {
-        alert('Erreur lors de la copie dans le presse-papier');
-      }
-    }, 'image/png');
-  };
 
+        const nftImage = new Image();
+        nftImage.onload = () => {
+            canvas.width = nftImage.width;
+            canvas.height = nftImage.height;
 
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(nftImage, 0, 0);
+
+            if (overlaySrc) {
+                const overlayImage = new Image();
+                overlayImage.onload = () => {
+                    ctx.save();
+                    ctx.translate(overlayPosition.x + overlaySize.width / 2, overlayPosition.y + overlaySize.height / 2);
+                    ctx.rotate((rotation * Math.PI) / 180);
+                    ctx.drawImage(
+                        overlayImage,
+                        -overlaySize.width / 2,
+                        -overlaySize.height / 2,
+                        overlaySize.width,
+                        overlaySize.height
+                    );
+                    ctx.restore();
+                    resolve(canvas); // Résoudre la promesse une fois que tout est chargé
+                };
+                overlayImage.onerror = (error) => reject(error);
+                overlayImage.src = overlaySrc;
+            } else {
+                resolve(canvas); // Résoudre la promesse si pas d'overlay
+            }
+        };
+        nftImage.onerror = (error) => reject(error);
+        nftImage.src = nftSrc;
+    });
+};
+
+// Fonction pour gérer l'exportation
+const handleExport = async (selectedNft: string, selectedOverlay: string | null, overlayPosition: { x: number, y: number }, overlaySize: { width: number, height: number }, rotation: number, backgroundColor: string) => {
+    try {
+        const canvas = await generateCanvasImage(
+            selectedNft,
+            selectedOverlay,
+            overlayPosition,
+            overlaySize,
+            rotation,
+            backgroundColor
+        );
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'combined-image.png';
+        link.click();
+    } catch (error) {
+        console.error("Error generating or downloading image:", error);
+        alert('Erreur lors de la génération ou du téléchargement de l\'image');
+    }
+};
+
+// Fonction pour copier dans le presse-papier
+const handleCopyToClipboard = async (selectedNft: string, selectedOverlay: string | null, overlayPosition: { x: number, y: number }, overlaySize: { width: number, height: number }, rotation: number, backgroundColor: string) => {
+    try {
+        const canvas = await generateCanvasImage(
+            selectedNft,
+            selectedOverlay,
+            overlayPosition,
+            overlaySize,
+            rotation,
+            backgroundColor
+        );
+        canvas.toBlob(async (blob) => {
+            if (blob) {
+                try {
+                    await navigator.clipboard.write([
+                        new ClipboardItem({
+                            [blob.type]: blob,
+                        }),
+                    ]);
+                    alert('Image copiée dans le presse-papier !');
+                } catch (err) {
+                    alert('Erreur lors de la copie dans le presse-papier');
+                    console.error("Clipboard write error:", err);
+                }
+            }
+        }, 'image/png');
+    } catch (error) {
+        console.error("Error generating canvas for clipboard:", error);
+        alert('Erreur lors de la génération de l\'image pour le presse-papier');
+    }
+};
 export default function GrindPage() {
   const [selectedNft, setSelectedNft] = useState<string | null>(null)
   const [backgroundColor, setBackgroundColor] = useState<string>('#ffffff')
@@ -301,13 +308,13 @@ export default function GrindPage() {
             {/* Boutons de rotation */}
             <button
               onClick={() => handleRotate('left')}
-              className="bg-blue-600 text-white p-2 rounded-full shadow"
+              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
             >
               ↺
             </button>
             <button
               onClick={() => handleRotate('right')}
-              className="bg-blue-600 text-white p-2 rounded-full shadow"
+              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
             >
               ↻
             </button>
@@ -315,13 +322,13 @@ export default function GrindPage() {
             {/* Boutons pour agrandir/réduire */}
             <button
               onClick={handleIncreaseSize}
-              className="bg-green-600 text-white p-2 rounded-full shadow"
+              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
             >
               +
             </button>
             <button
               onClick={handleDecreaseSize}
-              className="bg-red-600 text-white p-2 rounded-full shadow"
+              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
             >
               -
             </button>
@@ -329,25 +336,25 @@ export default function GrindPage() {
             {/* Flèches de déplacement */}
             <button
               onClick={() => moveOverlay('up')}
-              className="bg-yellow-600 text-white p-2 rounded-full shadow"
+              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
             >
               ↑
             </button>
             <button
               onClick={() => moveOverlay('down')}
-              className="bg-yellow-600 text-white p-2 rounded-full shadow"
+              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
             >
               ↓
             </button>
             <button
               onClick={() => moveOverlay('left')}
-              className="bg-yellow-600 text-white p-2 rounded-full shadow"
+              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
             >
               ←
             </button>
             <button
               onClick={() => moveOverlay('right')}
-              className="bg-yellow-600 text-white p-2 rounded-full shadow"
+              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
             >
               →
             </button>
