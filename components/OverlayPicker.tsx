@@ -12,6 +12,11 @@ export function OverlayPicker({ onSelect }: Props) {
   useEffect(() => {
     setImages([
       '/overlays/01.png',
+      '/overlays/Pose02.png',
+      '/overlays/Hat01.png',
+      '/overlays/Hat02.png',
+      '/overlays/Hat03.png',
+      '/overlays/Hat04.png',
     ])
   }, [])
 
