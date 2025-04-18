@@ -19,6 +19,8 @@ import {
     SelectTrigger,
     SelectValue,
   } from "@/components/ui/select"
+
+import { Rnd } from 'react-rnd'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
@@ -27,12 +29,18 @@ export default function GrindPage() {
   const [selectedNft, setSelectedNft] = useState<string | null>(null)
   const [backgroundColor, setBackgroundColor] = useState<string>('#ffffff')
   const [selectedOverlay, setSelectedOverlay] = useState<string | null>(null)
+  const [rotation, setRotation] = useState(0)
+  const [overlayPosition, setOverlayPosition] = useState({ x: 100, y: 100 })
+  const [overlaySize, setOverlaySize] = useState({ width: 150, height: 150 })
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [selectedChains, setSelectedChains] = useState<string[]>(['eth-mainnet'])
   const [nfts, setNfts] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const handleRotate = () => {
+    setRotation((prev) => (prev + 2) % 360)
+  }
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setWalletAddress(e.target.value)
   }
@@ -118,15 +126,89 @@ export default function GrindPage() {
             <OverlayPicker onSelect={setSelectedOverlay} />
 
             <div
-              id="canvas"
+            id="canvas"
+            className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg"
+            style={{ backgroundColor }}
+          >
+            <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain" />
+            {selectedOverlay && (
+              <div className="relative">
+                <button
+                  onClick={handleRotate}
+                  className="absolute -top-4 -right-4 bg-blue-600 text-white p-1 rounded-full shadow z-10"
+                >
+                  ↻
+                </button>
+                <Rnd
+                  size={overlaySize}
+                  position={overlayPosition}
+                  onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
+                  onResizeStop={(_, __, ref, ___, position) => {
+                    setOverlaySize({
+                      width: parseInt(ref.style.width),
+                      height: parseInt(ref.style.height),
+                    })
+                    setOverlayPosition(position)
+                  }}
+                  bounds="window"
+                  enableResizing
+                  lockAspectRatio
+                  style={{
+                    transform: `rotate(${rotation}deg)`,
+                    border: '2px dashed #ccc',
+                  }}
+                  resizeHandleStyles={{
+                    bottomRight: {
+                      width: '12px',
+                      height: '12px',
+                      background: '#333',
+                      borderRadius: '2px',
+                      position: 'absolute',
+                      right: '0',
+                      bottom: '0',
+                      cursor: 'se-resize',
+                    },
+                  }}
+                >
+                  <img
+                    src={selectedOverlay}
+                    alt="Overlay"
+                    className="w-full h-full object-contain pointer-events-none"
+                  />
+                </Rnd>
+              </div>
+            )}
+          </div>
+
+            {/* Static export version */}
+          <div id="export-version" className="absolute opacity-0 pointer-events-none">
+            <div
               className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg"
               style={{ backgroundColor }}
             >
-              <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain" />
-              {selectedOverlay && <EditableOverlay src={selectedOverlay} />}
+              <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain absolute inset-0" />
+              {selectedOverlay && (
+                <div
+                  className="absolute"
+                  style={{
+                    left: overlayPosition.x,
+                    top: overlayPosition.y,
+                    width: overlaySize.width,
+                    height: overlaySize.height,
+                    transform: `rotate(${rotation}deg)`,
+                  }}
+                >
+                  <img
+                    src={selectedOverlay}
+                    alt="Overlay"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              )}
             </div>
+          </div>
 
-            <ExportButtons exportTargetId="canvas" />
+          <ExportButtons exportTargetId="export-version" />
           </>
         )}
       </div>

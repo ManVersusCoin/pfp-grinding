@@ -15,7 +15,7 @@ export function EditableOverlay({ src }: Props) {
         width: 100,
         height: 100,
       }}
-      bounds="parent"
+      bounds="window"
       enableResizing
       lockAspectRatio
     >
