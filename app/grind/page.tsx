@@ -172,7 +172,7 @@ export default function GrindPage() {
   // Fonction pour déplacer l'overlay avec les flèches
   const moveOverlay = (direction: 'up' | 'down' | 'left' | 'right') => {
     setOverlayPosition((prev) => {
-      const movement = 10; // Distance de mouvement
+      const movement = 5; // Distance de mouvement
       switch (direction) {
         case 'up':
           return { x: prev.x, y: prev.y - movement }
@@ -281,7 +281,7 @@ export default function GrindPage() {
             {selectedOverlay && (
               <Rnd
                 size={overlaySize}
-                position={overlayPosition}
+                //position={overlayPosition}
                 onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
                 onResizeStop={(_, __, ref, ___, position) => {
                   setOverlaySize({
@@ -294,7 +294,7 @@ export default function GrindPage() {
                 enableResizing
                 lockAspectRatio
                 style={{
-                  transform: `rotate(${rotation}deg)`,
+                  transform: `rotate(${rotation}deg) translate(overlayPosition.x}px, overlayPosition.y}px)`,
                   border: '2px dashed #ccc',
                 }}
               >
