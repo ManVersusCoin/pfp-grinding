@@ -38,9 +38,10 @@ export default function GrindPage() {
     setError(null)
 
     try {
+      // Appel à l'API fetchNFTs pour récupérer les NFTs
       const { data, success, error } = await fetchNFTs([walletAddress], selectedChains)
       if (success) {
-        setNfts(data)
+        setNfts(data) // Mets à jour l'état avec les NFTs récupérés
       } else {
         setError(error || 'An error occurred while fetching NFTs')
       }
@@ -52,77 +53,80 @@ export default function GrindPage() {
   }
 
   return (
-    <main className="flex flex-col items-center p-4 gap-4">
-      <h1 className="text-2xl font-bold">🎨 PFP Grinder</h1>
+    <main className="flex p-4 gap-4">
+      {/* Left Column (parameters and actions) */}
+      <div className="w-1/2 flex flex-col gap-4">
+        <h1 className="text-2xl font-bold">🎨 PFP Grinder</h1>
 
-      {/* Address and Blockchain Form */}
-      <div className="mb-4">
-        <label htmlFor="wallet-address" className="block text-lg font-medium">Wallet Address</label>
-        <input
-          id="wallet-address"
-          type="text"
-          value={walletAddress}
-          onChange={handleAddressChange}
-          placeholder="Enter wallet address"
-          className="p-2 border rounded-md"
-        />
-      </div>
+        {/* Address and Blockchain Form */}
+        <div className="mb-4">
+          <label htmlFor="wallet-address" className="block text-lg font-medium">Wallet Address</label>
+          <input
+            id="wallet-address"
+            type="text"
+            value={walletAddress}
+            onChange={handleAddressChange}
+            placeholder="Enter wallet address"
+            className="p-2 border rounded-md"
+          />
+        </div>
 
-      <div className="mb-4">
-        <label htmlFor="blockchain-select" className="block text-lg font-medium">Select Blockchain</label>
-        <select
-          id="blockchain-select"
-          value={selectedChains[0]}
-          onChange={handleChainsChange}
-          className="p-2 border rounded-md"
+        <div className="mb-4">
+          <label htmlFor="blockchain-select" className="block text-lg font-medium">Select Blockchain</label>
+          <select
+            id="blockchain-select"
+            value={selectedChains[0]}
+            onChange={handleChainsChange}
+            className="p-2 border rounded-md"
+          >
+            {SUPPORTED_CHAINS.map((chain) => (
+              <option key={chain.id} value={chain.id}>
+                {chain.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          onClick={handleFetchNFTs}
+          className="px-4 py-2 bg-blue-500 text-white rounded-md"
         >
-          {SUPPORTED_CHAINS.map((chain) => (
-            <option key={chain.id} value={chain.id}>
-              {chain.name}
-            </option>
-          ))}
-        </select>
+          Load NFTs
+        </button>
+
+        {/* Display Loading and Error States */}
+        {loading && <p>Loading NFTs...</p>}
+        {error && <p className="text-red-500">{error}</p>}
+
+        {/* NFT Editing */}
+        {selectedNft && (
+          <>
+            <BackgroundPicker value={backgroundColor} onChange={setBackgroundColor} />
+            <OverlayPicker onSelect={setSelectedOverlay} />
+
+            <div
+              id="canvas"
+              className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg"
+              style={{ backgroundColor }}
+            >
+              <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain" />
+              {selectedOverlay && <EditableOverlay src={selectedOverlay} />}
+            </div>
+
+            <ExportButtons exportTargetId="canvas" />
+          </>
+        )}
       </div>
 
-      <button
-        onClick={handleFetchNFTs}
-        className="px-4 py-2 bg-blue-500 text-white rounded-md"
-      >
-        Load NFTs
-      </button>
-
-      {/* Display Loading and Error States */}
-      {loading && <p>Loading NFTs...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-
-      {/* NFT Selection */}
-      {nfts.length > 0 && (
-        <>
-          <div className="mb-4">
-            <label className="block text-lg font-medium">Select Your NFT</label>
-            <NftSelector nfts={nfts} onSelect={setSelectedNft} />
-          </div>
-
-          {/* NFT Editing */}
-          {selectedNft && (
-            <>
-              <BackgroundPicker value={backgroundColor} onChange={setBackgroundColor} />
-              <OverlayPicker onSelect={setSelectedOverlay} />
-
-              <div
-                id="canvas"
-                className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg"
-                style={{ backgroundColor }}
-              >
-                <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain" />
-                {selectedOverlay && <EditableOverlay src={selectedOverlay} />}
-              </div>
-
-              <ExportButtons exportTargetId="canvas" />
-            </>
-          )}
-        </>
-      )}
+      {/* Right Column (NFT Selection) */}
+      <div className="w-1/2 overflow-y-auto max-h-screen">
+        <h2 className="text-xl font-bold mb-4">Select Your NFT</h2>
+        {nfts.length > 0 ? (
+          <NftSelector nfts={nfts} onSelect={setSelectedNft} />
+        ) : (
+          <p>No NFTs found</p>
+        )}
+      </div>
     </main>
   )
 }
