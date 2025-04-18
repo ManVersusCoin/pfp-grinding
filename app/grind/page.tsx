@@ -280,7 +280,7 @@ export default function GrindPage() {
             <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain" />
             {selectedOverlay && (
               <Rnd
-                size={overlaySize}
+                //size={overlaySize}
                 //position={overlayPosition}
                 onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
                 onResizeStop={(_, __, ref, ___, position) => {
@@ -294,9 +294,13 @@ export default function GrindPage() {
                 enableResizing
                 lockAspectRatio
                 style={{
-                  transform: `rotate(${rotation}deg) translate(overlayPosition.x}px, overlayPosition.y}px)`,
+                  transform: `translate(${overlayPosition.x}px, ${overlayPosition.y}px) rotate(${rotation}deg)`,
                   border: '2px dashed #ccc',
+                  position: 'absolute',
+                  width: overlaySize.width,
+                  height: overlaySize.height,
                 }}
+                
               >
                 <img
                   src={selectedOverlay}
