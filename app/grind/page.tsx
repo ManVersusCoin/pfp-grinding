@@ -8,6 +8,7 @@ import { ExportButtons } from '@/components/ExportButtons'
 import { DownloadIcon, RefreshCw, Share2, AlertCircle, MoveHorizontal, ArrowUpDown, Copy, Check } from "lucide-react"
 import { NftSelector } from '@/components/NftSelector'
 import { OverlayPicker } from '@/components/OverlayPicker'
+import { LazyNftItem } from '@/components/LazyNftItem'
 import { fetchNFTs } from '@/app/actions/nft-actions'
 import { SUPPORTED_CHAINS } from '@/lib/constants'
 
@@ -26,7 +27,7 @@ import { Rnd } from 'react-rnd'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
-import LazyLoad from 'react-lazyload'
+import { useInView } from 'react-intersection-observer'
 
 const generateCanvasImage = (
   nftSrc: string,
@@ -178,9 +179,9 @@ export default function GrindPage() {
   };
 
   const filteredNFTs = nfts.filter((nft) =>
-    (nft.collection ? nft.collection.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
-    (nft.tokenId ? nft.tokenId.toString().includes(searchTerm) : false) ||
-    (nft.name ? nft.name.toLowerCase().includes(searchTerm.toLowerCase()) : false)
+    (nft.collectionName && nft.collectionName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (nft.tokenId && nft.tokenId.toString().includes(searchTerm)) ||
+    (nft.name && nft.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleFetchNFTs = async () => {
@@ -299,19 +300,7 @@ export default function GrindPage() {
         {filteredNFTs.length > 0 ? (
           <div className="space-y-4">
             {filteredNFTs.map((nft) => (
-              <LazyLoad key={nft.id} height={50} offset={50} once scrollContainer=".nft-scroll-area">
-                <div onClick={() => setSelectedNft(nft.image)} className="flex items-center cursor-pointer">
-                  <img
-                    src={nft.image}
-                    alt={nft.tokenId}
-                    className="w-16 h-16 object-cover rounded-full mr-4"
-                  />
-                  <div>
-                    <h4 className="text-sm font-semibold">{nft.collection}</h4>
-                    <p className="text-xs text-gray-500">{nft.name} - {nft.tokenId}</p>
-                  </div>
-                </div>
-              </LazyLoad>
+              <LazyNftItem key={nft.id} nft={nft} onSelect={setSelectedNft} />
             ))}
           </div>
         ) : (
