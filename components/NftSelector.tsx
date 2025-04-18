@@ -1,56 +1,30 @@
 // components/NftSelector.tsx
-import { useState } from 'react'
-import { useAccount } from '@/hooks/use-account'
-import { useNFTs } from '@/hooks/use-nfts'
+import React from 'react'
 
-export function NftSelector({ onSelect }: { onSelect: (nft: string) => void }) {
-  const { address, updateAddress } = useAccount()  // Récupère le hook pour gérer l'adresse manuelle
-  const [inputAddress, setInputAddress] = useState<string>(address || '') // état pour le champ d'entrée
-  const { nfts, loading, error } = useNFTs(address ? [address] : [])
+type NftSelectorProps = {
+  nfts: any[]
+  onSelect: (nft: string) => void
+}
 
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputAddress(e.target.value)
-  }
-
-  const handleAddressSubmit = () => {
-    updateAddress(inputAddress)  // Met à jour l'adresse avec l'entrée de l'utilisateur
-  }
-
-  if (loading) return <div>Loading NFTs...</div>
-  if (error) return <div>Error: {error}</div>
-
+export const NftSelector: React.FC<NftSelectorProps> = ({ nfts, onSelect }) => {
   return (
-    <div>
-      <h2>Select Your NFT</h2>
-
-      {/* Champ de saisie d'adresse */}
-      <div className="mb-4">
-        <input
-          type="text"
-          value={inputAddress}
-          onChange={handleAddressChange}
-          placeholder="Enter wallet address"
-          className="p-2 border rounded-md"
-        />
-        <button
-          onClick={handleAddressSubmit}
-          className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md"
+    <div className="grid grid-cols-3 gap-4">
+      {nfts.map((nft) => (
+        <div
+          key={nft.id}
+          className="cursor-pointer"
+          onClick={() => onSelect(nft.image)}
         >
-          Load NFTs
-        </button>
-      </div>
-
-      {/* Affichage des NFTs */}
-      {nfts.length > 0 ? (
-        nfts.map((nft) => (
-          <div key={nft.id} onClick={() => onSelect(nft.image)} className="cursor-pointer">
-            <img src={nft.image} alt={nft.name} width={100} height={100} />
-            <p>{nft.name}</p>
+          <img
+            src={nft.image}
+            alt={nft.name}
+            className="w-full h-auto rounded-lg border-2 border-gray-300"
+          />
+          <div className="text-center mt-2">
+            <span className="text-sm">{nft.name}</span>
           </div>
-        ))
-      ) : (
-        <p>No NFTs found</p>
-      )}
+        </div>
+      ))}
     </div>
   )
 }
