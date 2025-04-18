@@ -1,3 +1,4 @@
+// app/grind/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -66,12 +67,12 @@ const generateCanvasImage = (
                         overlaySize.height
                     );
                     ctx.restore();
-                    resolve(canvas); // Résoudre la promesse une fois que tout est chargé
+                    resolve(canvas);
                 };
                 overlayImage.onerror = (error) => reject(error);
                 overlayImage.src = overlaySrc;
             } else {
-                resolve(canvas); // Résoudre la promesse si pas d'overlay
+                resolve(canvas);
             }
         };
         nftImage.onerror = (error) => reject(error);
@@ -79,7 +80,6 @@ const generateCanvasImage = (
     });
 };
 
-// Fonction pour gérer l'exportation
 const handleExport = async (selectedNft: string, selectedOverlay: string | null, overlayPosition: { x: number, y: number }, overlaySize: { width: number, height: number }, rotation: number, backgroundColor: string) => {
     try {
         const canvas = await generateCanvasImage(
@@ -101,7 +101,6 @@ const handleExport = async (selectedNft: string, selectedOverlay: string | null,
     }
 };
 
-// Fonction pour copier dans le presse-papier
 const handleCopyToClipboard = async (selectedNft: string, selectedOverlay: string | null, overlayPosition: { x: number, y: number }, overlaySize: { width: number, height: number }, rotation: number, backgroundColor: string) => {
     try {
         const canvas = await generateCanvasImage(
@@ -132,6 +131,7 @@ const handleCopyToClipboard = async (selectedNft: string, selectedOverlay: strin
         alert('Erreur lors de la génération de l\'image pour le presse-papier');
     }
 };
+
 export default function GrindPage() {
   const [selectedNft, setSelectedNft] = useState<string | null>(null)
   const [backgroundColor, setBackgroundColor] = useState<string>('#ffffff')
@@ -145,45 +145,30 @@ export default function GrindPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-
+  const proxiedNFT = selectedNft ? `/api/proxy?url=${encodeURIComponent(selectedNft)}` : null
+  const proxiedOverlay = selectedOverlay ? `/api/proxy?url=${encodeURIComponent(selectedOverlay)}` : null
 
   const handleRotate = (direction: 'left' | 'right') => {
-    console.log(direction)
-    console.log(rotation)
     setRotation((prev) => (direction === 'left' ? (prev - 2) % 360 : (prev + 2) % 360))
   }
 
-  // Fonction pour augmenter la taille de l'overlay
   const handleIncreaseSize = () => {
-    setOverlaySize((prev) => ({
-      width: prev.width * 1.1,  // Augmente la taille de 10%
-      height: prev.height * 1.1,
-    }))
+    setOverlaySize((prev) => ({ width: prev.width * 1.1, height: prev.height * 1.1 }))
   }
 
-  // Fonction pour diminuer la taille de l'overlay
   const handleDecreaseSize = () => {
-    setOverlaySize((prev) => ({
-      width: prev.width * 0.9,  // Réduit la taille de 10%
-      height: prev.height * 0.9,
-    }))
+    setOverlaySize((prev) => ({ width: prev.width * 0.9, height: prev.height * 0.9 }))
   }
 
-  // Fonction pour déplacer l'overlay avec les flèches
   const moveOverlay = (direction: 'up' | 'down' | 'left' | 'right') => {
     setOverlayPosition((prev) => {
-      const movement = 5; // Distance de mouvement
+      const movement = 5;
       switch (direction) {
-        case 'up':
-          return { x: prev.x, y: prev.y - movement }
-        case 'down':
-          return { x: prev.x, y: prev.y + movement }
-        case 'left':
-          return { x: prev.x - movement, y: prev.y }
-        case 'right':
-          return { x: prev.x + movement, y: prev.y }
-        default:
-          return prev
+        case 'up': return { x: prev.x, y: prev.y - movement }
+        case 'down': return { x: prev.x, y: prev.y + movement }
+        case 'left': return { x: prev.x - movement, y: prev.y }
+        case 'right': return { x: prev.x + movement, y: prev.y }
+        default: return prev
       }
     })
   }
@@ -192,28 +177,17 @@ export default function GrindPage() {
     setWalletAddress(e.target.value)
   }
 
-  const handleChainsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value
-    setSelectedChains(value ? [value] : [])
-  }
-
   const handleFetchNFTs = async () => {
     if (!walletAddress) {
       setError('Please enter a wallet address')
       return
     }
-
     setLoading(true)
     setError(null)
-
     try {
-      // Appel à l'API fetchNFTs pour récupérer les NFTs
       const { data, success, error } = await fetchNFTs([walletAddress], selectedChains)
-      if (success) {
-        setNfts(data) // Mets à jour l'état avec les NFTs récupérés
-      } else {
-        setError(error || 'An error occurred while fetching NFTs')
-      }
+      if (success) setNfts(data)
+      else setError(error || 'An error occurred while fetching NFTs')
     } catch (err) {
       setError('An error occurred while fetching NFTs')
     } finally {
@@ -223,20 +197,12 @@ export default function GrindPage() {
 
   return (
     <main className="container mx-auto flex p-4 gap-4">
-      {/* Left Column (parameters and actions) */}
       <div className="w-1/2 flex flex-col gap-4">
         <h1 className="text-2xl font-bold">🎨 PFP Grinder</h1>
 
-        {/* Address and Blockchain Form */}
         <div className="mb-4">
           <Label htmlFor="wallet-address" className="block text-lg font-medium">Wallet Address</Label>
-          <Input
-            id="wallet-address"
-            type="text"
-            value={walletAddress}
-            onChange={handleAddressChange}
-            placeholder="Enter wallet address"
-          />
+          <Input id="wallet-address" type="text" value={walletAddress} onChange={handleAddressChange} placeholder="Enter wallet address" />
         </div>
 
         <div className="mb-4">
@@ -247,136 +213,58 @@ export default function GrindPage() {
             </SelectTrigger>
             <SelectContent>
                 {SUPPORTED_CHAINS.map((chain) => (
-                <SelectItem key={chain.id} value={chain.id}>
-                    {chain.name}
-                </SelectItem>
+                <SelectItem key={chain.id} value={chain.id}>{chain.name}</SelectItem>
                 ))}
             </SelectContent>
-            </Select>
+          </Select>
         </div>
 
-        <Button
-          onClick={handleFetchNFTs}
-          className="w-full"
-        >
-          Load NFTs
-        </Button>
+        <Button onClick={handleFetchNFTs} className="w-full">Load NFTs</Button>
 
-        {/* Display Loading and Error States */}
         {loading && <p>Loading NFTs...</p>}
         {error && <p className="text-red-500">{error}</p>}
 
-        {/* NFT Editing */}
         {selectedNft && (
           <>
             <BackgroundPicker value={backgroundColor} onChange={setBackgroundColor} />
             <OverlayPicker onSelect={setSelectedOverlay} />
 
-            <div
-            id="canvas"
-            className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg"
-            style={{ backgroundColor }}
-          >
-            <img src={selectedNft} alt="Selected NFT" className="w-full h-full object-contain" />
-            {selectedOverlay && (
-              <Rnd
-                //size={overlaySize}
-                //position={overlayPosition}
-                onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
-                onResizeStop={(_, __, ref, ___, position) => {
-                  setOverlaySize({
-                    width: parseInt(ref.style.width),
-                    height: parseInt(ref.style.height),
-                  })
-                  setOverlayPosition(position)
-                }}
-                bounds="window"
-                enableResizing
-                lockAspectRatio
-                style={{
-                  transform: `translate(${overlayPosition.x}px, ${overlayPosition.y}px) rotate(${rotation}deg)`,
-                  border: '2px dashed #ccc',
-                  position: 'absolute',
-                  width: overlaySize.width,
-                  height: overlaySize.height,
-                }}
-                
-              >
-                <img
-                  src={selectedOverlay}
-                  alt="Overlay"
-                  className="w-full h-full object-contain pointer-events-none"
-                />
-              </Rnd>
-            )}
-          </div>
+            <div id="canvas" className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg" style={{ backgroundColor }}>
+              <img src={proxiedNFT || ''} alt="Selected NFT" className="w-full h-full object-contain" />
+              {selectedOverlay && (
+                <Rnd
+                  onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
+                  onResizeStop={(_, __, ref, ___, position) => {
+                    setOverlaySize({ width: parseInt(ref.style.width), height: parseInt(ref.style.height) })
+                    setOverlayPosition(position)
+                  }}
+                  bounds="window"
+                  enableResizing
+                  lockAspectRatio
+                  style={{ transform: `translate(${overlayPosition.x}px, ${overlayPosition.y}px) rotate(${rotation}deg)`, border: '2px dashed #ccc', position: 'absolute', width: overlaySize.width, height: overlaySize.height }}
+                >
+                  <img src={proxiedOverlay || ''} alt="Overlay" className="w-full h-full object-contain pointer-events-none" />
+                </Rnd>
+              )}
+            </div>
 
-          
-          <div className="flex gap-2 mt-4">
-            
-            <button
-              onClick={() => handleRotate('left')}
-              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
-            >
-              ↺
-            </button>
-            <button
-              onClick={() => handleRotate('right')}
-              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
-            >
-              ↻
-            </button>
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => handleRotate('left')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↺</button>
+              <button onClick={() => handleRotate('right')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↻</button>
+              <button onClick={handleIncreaseSize} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">+</button>
+              <button onClick={handleDecreaseSize} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">-</button>
+              <button onClick={() => moveOverlay('up')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↑</button>
+              <button onClick={() => moveOverlay('down')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↓</button>
+              <button onClick={() => moveOverlay('left')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">←</button>
+              <button onClick={() => moveOverlay('right')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">→</button>
+            </div>
 
-            
-            <button
-              onClick={handleIncreaseSize}
-              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
-            >
-              +
-            </button>
-            <button
-              onClick={handleDecreaseSize}
-              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
-            >
-              -
-            </button>
-
-            
-            <button
-              onClick={() => moveOverlay('up')}
-              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
-            >
-              ↑
-            </button>
-            <button
-              onClick={() => moveOverlay('down')}
-              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
-            >
-              ↓
-            </button>
-            <button
-              onClick={() => moveOverlay('left')}
-              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
-            >
-              ←
-            </button>
-            <button
-              onClick={() => moveOverlay('right')}
-              className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
-            >
-              →
-            </button>
-          </div>
-
-          <button onClick={() => handleExport(selectedNft, selectedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)}>Download Image</button>
-
-          
-          <button onClick={() => handleCopyToClipboard(selectedNft, selectedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)}>Copy to Clipboard</button>
-        </>
+            <button onClick={() => handleExport(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)}>Download Image</button>
+            <button onClick={() => handleCopyToClipboard(proxiedNFT!, proxiedOverlay, overlayPosition, overlaySize, rotation, backgroundColor)}>Copy to Clipboard</button>
+          </>
         )}
       </div>
 
-      {/* Right Column (NFT Selection) */}
       <div className="w-1/2 overflow-y-auto max-h-screen">
         <h2 className="text-xl font-bold mb-4">Select Your NFT</h2>
         {nfts.length > 0 ? (
