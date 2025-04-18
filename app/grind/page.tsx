@@ -205,6 +205,7 @@ export default function GrindPage() {
                 <h1 className="text-2xl font-bold self-center">🎨 PFP Grinder</h1>
 
                 <div className="mb-4 w-full max-w-md">
+                    <p className='my-2 text-sm'>Fill your wallet address, select a Blockchain, Load NFTs, Select one, and start customize it with some $GRIND overlays, copy and share !</p>
                     <Label htmlFor="wallet-address" className="block text-lg font-medium">Wallet Address</Label>
                     <Input id="wallet-address" type="text" value={walletAddress} onChange={handleAddressChange} placeholder="Enter wallet address" className="w-full" />
                 </div>
@@ -228,13 +229,15 @@ export default function GrindPage() {
                 {loading && <p>Loading NFTs...</p>}
                 {error && <p className="text-red-500">Error: {error}</p>}
 
-                {selectedNft && (
+                
                     <div className="flex flex-col items-center gap-4 w-full">
+                        {/*
                         <BackgroundPicker value={backgroundColor} onChange={setBackgroundColor} />
+                       */}
                         <OverlayPicker onSelect={setSelectedOverlay} />
 
                         <div id="canvas" className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg" style={{ backgroundColor }}>
-                            <img src={proxiedNFT || ''} alt="Selected NFT" className="w-full h-full object-contain" />
+                            <img src={proxiedNFT || '/overlays/01.png'} alt="Select a NFT" className="w-full h-full object-contain" />
                             {selectedOverlay && (
                                 <Rnd
                                     position={overlayPosition}
@@ -283,7 +286,7 @@ export default function GrindPage() {
                             </Button>
                         </div>
                     </div>
-                )}
+                
             </div>
 
       <div className="w-1/2 overflow-y-auto max-h-screen">
