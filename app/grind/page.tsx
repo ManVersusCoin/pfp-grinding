@@ -42,6 +42,7 @@ const generateCanvasImage = (
         }
 
         const nftImage = new Image();
+        nftImage.crossOrigin = "anonymous";
         nftImage.onload = () => {
             canvas.width = nftImage.width;
             canvas.height = nftImage.height;
@@ -52,6 +53,7 @@ const generateCanvasImage = (
 
             if (overlaySrc) {
                 const overlayImage = new Image();
+                overlayImage.crossOrigin = "anonymous";
                 overlayImage.onload = () => {
                     ctx.save();
                     ctx.translate(overlayPosition.x + overlaySize.width / 2, overlayPosition.y + overlaySize.height / 2);
@@ -146,6 +148,8 @@ export default function GrindPage() {
 
 
   const handleRotate = (direction: 'left' | 'right') => {
+    console.log(direction)
+    console.log(rotation)
     setRotation((prev) => (direction === 'left' ? (prev - 2) % 360 : (prev + 2) % 360))
   }
 
@@ -303,9 +307,9 @@ export default function GrindPage() {
             )}
           </div>
 
-          {/* Barre d'outils sous l'image */}
+          
           <div className="flex gap-2 mt-4">
-            {/* Boutons de rotation */}
+            
             <button
               onClick={() => handleRotate('left')}
               className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
@@ -319,7 +323,7 @@ export default function GrindPage() {
               ↻
             </button>
 
-            {/* Boutons pour agrandir/réduire */}
+            
             <button
               onClick={handleIncreaseSize}
               className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
@@ -333,7 +337,7 @@ export default function GrindPage() {
               -
             </button>
 
-            {/* Flèches de déplacement */}
+            
             <button
               onClick={() => moveOverlay('up')}
               className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center"
