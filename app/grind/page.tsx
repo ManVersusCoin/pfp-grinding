@@ -7,7 +7,7 @@ import { EditableOverlay } from '@/components/EditableOverlay'
 import { ExportButtons } from '@/components/ExportButtons'
 import { NftSelector } from '@/components/NftSelector'
 import { OverlayPicker } from '@/components/OverlayPicker'
-import { fetchNFTs } from '@/actions/nft-action'
+import { fetchNFTs } from '@/app/actions/nft-actions'
 import { SUPPORTED_CHAINS } from '@/lib/constants'
 
 export default function GrindPage() {
