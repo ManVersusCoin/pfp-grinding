@@ -52,7 +52,7 @@ const generateCanvasImage = (
 
       ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(nftImage, 0, 0);
+      ctx.drawImage(nftImage, 0, 0); 
 
       if (overlaySrc) {
         const overlayImage = new Image();
