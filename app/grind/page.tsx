@@ -9,6 +9,8 @@ import { OverlayPicker } from '@/components/OverlayPicker'
 import { fetchNFTs } from '@/app/actions/nft-actions'
 import { SUPPORTED_CHAINS } from '@/lib/constants'
 
+import { Button, Input, Select, Label } from '@/components/ui' // Import des composants UI
+
 export default function GrindPage() {
   const [selectedNft, setSelectedNft] = useState<string | null>(null)
   const [backgroundColor, setBackgroundColor] = useState<string>('#ffffff')
@@ -60,39 +62,37 @@ export default function GrindPage() {
 
         {/* Address and Blockchain Form */}
         <div className="mb-4">
-          <label htmlFor="wallet-address" className="block text-lg font-medium">Wallet Address</label>
-          <input
+          <Label htmlFor="wallet-address" className="block text-lg font-medium">Wallet Address</Label>
+          <Input
             id="wallet-address"
             type="text"
             value={walletAddress}
             onChange={handleAddressChange}
             placeholder="Enter wallet address"
-            className="p-2 border rounded-md"
           />
         </div>
 
         <div className="mb-4">
-          <label htmlFor="blockchain-select" className="block text-lg font-medium">Select Blockchain</label>
-          <select
+          <Label htmlFor="blockchain-select" className="block text-lg font-medium">Select Blockchain</Label>
+          <Select
             id="blockchain-select"
             value={selectedChains[0]}
             onChange={handleChainsChange}
-            className="p-2 border rounded-md"
           >
             {SUPPORTED_CHAINS.map((chain) => (
               <option key={chain.id} value={chain.id}>
                 {chain.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
-        <button
+        <Button
           onClick={handleFetchNFTs}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md"
+          className="w-full"
         >
           Load NFTs
-        </button>
+        </Button>
 
         {/* Display Loading and Error States */}
         {loading && <p>Loading NFTs...</p>}
