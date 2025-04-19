@@ -36,7 +36,7 @@ export default function NFTDropdownSelector({
   };
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full">
       <h2 className="text-xl font-bold mb-2">Select Your NFT</h2>
 
       <button

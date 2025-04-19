@@ -6,7 +6,7 @@ import { BackgroundPicker } from '@/components/BackgroundPicker'
 import { EditableOverlay } from '@/components/EditableOverlay'
 import { ExportButtons } from '@/components/ExportButtons'
 import { DownloadIcon, RefreshCw, Share2, AlertCircle, MoveHorizontal, ArrowUpDown, Copy, Check, Layers2, Plus, Trash2, ArrowLeftRight } from "lucide-react"
-import { NftSelector } from '@/components/NftSelector'
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 import NFTDropdownSelector from '@/components/NFTDropdownSelector'
 import { OverlayPicker } from '@/components/OverlayPicker'
 import { LazyNftItem } from '@/components/LazyNftItem'
@@ -26,7 +26,7 @@ import {
 
 import { Rnd } from 'react-rnd'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent } from "@/components/ui/card"
+
 import { Slider } from "@/components/ui/slider"
 import { useInView } from 'react-intersection-observer'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -138,7 +138,7 @@ export default function GrindPage() {
     const [searchTerm, setSearchTerm] = useState<string>('');
     const nftListRef = useRef<HTMLDivElement>(null);
     const [isDraggingOrResizing, setIsDraggingOrResizing] = useState(false);
-
+    const [uploadedImage, setUploadedImage] = useState<string | null>(null);
     const proxiedNFT = selectedNft ? `/api/proxy?url=${encodeURIComponent(selectedNft)}` : null;
 
     const selectedOverlay = overlays.find(overlay => overlay.id === selectedOverlayId);
@@ -279,41 +279,88 @@ export default function GrindPage() {
             <div className="w-full lg:w-1/2 flex flex-col gap-4 items-center">
                 <h1 className="text-2xl font-bold self-center">🎨 PFP Grinder</h1>
 
-                <div className="mb-4 w-full max-w-md">
-                    <p className='my-2 text-sm'>Fill your wallet address, select a Blockchain, Load NFTs, Select one, and start customize it with some $GRIND overlays, copy and share !</p>
-                    <Label htmlFor="wallet-address" className="block text-lg font-medium">Wallet Address</Label>
-                    <Input id="wallet-address" type="text" value={walletAddress} onChange={handleAddressChange} placeholder="Enter wallet address" className="w-full" />
-                </div>
+                <Card className="w-full max-w-2xl mx-auto mb-6 rounded-2xl shadow-md">
+                <CardHeader>
+                    <CardTitle className="text-xl">Select Your NFT</CardTitle>
+                </CardHeader>
 
-                <div className="mb-4 w-full max-w-md">
+                <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                    Fill your wallet address, select a Blockchain, Load NFTs, Select one, and start customizing it with some $GRIND overlays, copy and share!
+                    </p>
+
+                    {/* Wallet Address */}
+                    <div>
+                    <Label htmlFor="wallet-address" className="block text-lg font-medium">Wallet Address</Label>
+                    <Input
+                        id="wallet-address"
+                        type="text"
+                        value={walletAddress}
+                        onChange={handleAddressChange}
+                        placeholder="Enter wallet address"
+                        className="w-full"
+                    />
+                    </div>
+
+                    {/* Blockchain Select + Load Button */}
+                    <div>
                     <Label htmlFor="blockchain-select" className="block text-lg font-medium mb-2">Select Blockchain</Label>
                     <div className="flex items-center gap-2">
-                        <Select value={selectedChains[0]} onValueChange={(value) => setSelectedChains([value])} className="flex-1">
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a blockchain" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {SUPPORTED_CHAINS.map((chain) => (
-                                    <SelectItem key={chain.id} value={chain.id}>{chain.name}</SelectItem>
-                                ))}
-                            </SelectContent>
+                        <Select value={selectedChains[0]} onValueChange={(value) => setSelectedChains([value])}>
+                        <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Select a blockchain" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {SUPPORTED_CHAINS.map((chain) => (
+                            <SelectItem key={chain.id} value={chain.id}>
+                                {chain.name}
+                            </SelectItem>
+                            ))}
+                        </SelectContent>
                         </Select>
 
-                        {/* Button Load NFTs */}
-                        <Button onClick={handleFetchNFTs} className="w-auto text-sm ml-auto">
-                            Load NFTs
+                        <Button onClick={handleFetchNFTs} className="text-sm ml-auto whitespace-nowrap">
+                        Load NFTs
                         </Button>
                     </div>
-                </div>
-                
-                {loading && <p>Loading NFTs...</p>}
-                {error && <p className="text-red-500">Error: {error}</p>}
-                <NFTDropdownSelector
-                  filteredNFTs={filteredNFTs}
-                  onSelect={(nft) => setSelectedNft(nft)}
-                  //onSelect={setSelectedNft}
-                />
-                
+                    </div>
+
+                    {/* Loading / Error */}
+                    {loading && <p className="text-sm text-gray-500">Loading NFTs...</p>}
+                    {error && <p className="text-sm text-red-500">Error: {error}</p>}
+
+                    {/* NFT Dropdown */}
+                    <NFTDropdownSelector
+                    filteredNFTs={filteredNFTs}
+                    onSelect={(nft) => setSelectedNft(nft)}
+                    />
+                </CardContent>
+                </Card>
+                <Card className="max-w-2xl w-full mx-auto mt-6 rounded-2xl shadow-md">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Upload Your Own Image</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-4">
+                                    
+                    <Input
+                        id="upload-image"
+                        type="file"
+                        accept="image/png, image/jpeg"
+                        onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                            setUploadedImage(reader.result as string);
+                            setSelectedNft(null); // reset NFT if custom image is used
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                        }}
+                    />
+                    </CardContent>
+                    </Card>
+
             </div>
             
 
@@ -323,7 +370,12 @@ export default function GrindPage() {
                     <OverlayPicker onSelect={handleAddOverlay} />
 
                     <div id="canvas" className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg" style={{ backgroundColor }}>
-                        <img src={proxiedNFT || '/overlays/01.png'} alt="Select a NFT" className="w-full h-full object-contain" />
+                    <img
+                        src={uploadedImage || proxiedNFT || '/overlays/01.png'}
+                        alt="Selected image"
+                        className="w-full h-full object-contain"
+                        />
+
                         {overlays.map((overlay, index) => (
                             <Rnd
                                 key={overlay.id}
@@ -383,15 +435,15 @@ export default function GrindPage() {
                     </div>
                     
                 <h3 className="text-lg font-bold">Overlay Layers</h3>
-                <Button onClick={handleClearAllOverlays} className="w-full" variant="destructive">
+                {/*<Button onClick={handleClearAllOverlays} className="w-full" variant="destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Clear All
-                </Button>
+                </Button>*/}
 
                 <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable droppableId="overlays">
                         {(provided) => (
-                            <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                            <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1">
                                 {overlays.map((overlay, index) => (
                                     <Draggable key={overlay.id} draggableId={overlay.id} index={index}>
                                         {(provided) => (
@@ -399,7 +451,7 @@ export default function GrindPage() {
                                                 ref={provided.innerRef}
                                                 {...provided.draggableProps}
                                                 {...provided.dragHandleProps}
-                                                className={`bg-white dark:bg-gray-700 p-2 rounded-md shadow-sm flex items-center justify-between ${selectedOverlayId === overlay.id ? 'border-blue-500 border-2' : ''}`}
+                                                className={`bg-white dark:bg-gray-700 p-1 rounded-md shadow-sm flex items-center justify-between ${selectedOverlayId === overlay.id ? 'border-blue-500 border-2' : ''}`}
                                                 onClick={() => setSelectedOverlayId(overlay.id)}
                                             >
                                                 <div className="w-10 h-10 rounded-md overflow-hidden">
@@ -433,11 +485,11 @@ export default function GrindPage() {
                 {overlays.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">No overlays added yet.</p>}
             
                     <div className="flex w-full max-w-md gap-2 mt-2">
-                        <Button onClick={() => handleExport(proxiedNFT!, overlays, backgroundColor)} className="w-1/2">
+                        <Button onClick={() => handleExport(uploadedImage || proxiedNFT!, overlays, backgroundColor)} className="w-1/2">
                             <DownloadIcon className="mr-2 h-4 w-4" />
                             Download
                         </Button>
-                        <Button onClick={() => handleCopyToClipboard(proxiedNFT!, overlays, backgroundColor)} className="w-1/2">
+                        <Button onClick={() => handleCopyToClipboard(uploadedImage || proxiedNFT!, overlays, backgroundColor)} className="w-1/2">
                             <Copy className="mr-2 h-4 w-4" />
                             Copy to Clipboard
                         </Button>
