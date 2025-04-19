@@ -145,6 +145,7 @@ export default function GrindPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const nftListRef = useRef<HTMLDivElement>(null);
+  const [isDraggingOrResizing, setIsDraggingOrResizing] = useState(false);
 
   const proxiedNFT = selectedNft ? `/api/proxy?url=${encodeURIComponent(selectedNft)}` : null;
   const proxiedOverlay = selectedOverlay;
@@ -241,29 +242,42 @@ export default function GrindPage() {
             <img src={proxiedNFT || '/overlays/01.png'} alt="Select a NFT" className="w-full h-full object-contain" />
             {selectedOverlay && (
               <Rnd
-                position={overlayPosition}
-                size={overlaySize}
-                onDragStop={(_, d) => setOverlayPosition({ x: d.x, y: d.y })}
-                onResizeStop={(_, __, ref, ___, position) => {
-                  setOverlaySize({ width: parseInt(ref.style.width), height: parseInt(ref.style.height) });
-                  setOverlayPosition(position);
-                }}
-                className="hover-overlay"
-                enableResizing
-                lockAspectRatio
-                style={{
-                  border: '2px dashed #ccc',
-                  transform: `rotate(${rotation}deg)`,
-                  position: 'absolute',
-                }}
-              >
-                <img src={proxiedOverlay || ''} alt="Overlay" className="w-full h-full object-contain pointer-events-none" />
-              </Rnd>
+              position={overlayPosition}
+              size={overlaySize}
+              onDragStart={() => setIsDraggingOrResizing(true)}
+              onDragStop={(_, d) => {
+                setOverlayPosition({ x: d.x, y: d.y });
+                setIsDraggingOrResizing(false);
+              }}
+              onResizeStart={() => setIsDraggingOrResizing(true)}
+              onResizeStop={(_, __, ref, ___, position) => {
+                setOverlaySize({ width: parseInt(ref.style.width), height: parseInt(ref.style.height) });
+                setOverlayPosition(position);
+                setIsDraggingOrResizing(false);
+              }}
+              className="hover-overlay"
+              enableResizing
+              lockAspectRatio
+              style={{
+                border: isDraggingOrResizing ? '2px dashed #ccc' : 'none',
+                position: 'absolute',
+                background: 'transparent',
+              }}
+            >
+              <img
+                src={proxiedOverlay || ''}
+                alt="Overlay"
+                className="w-full h-full object-contain pointer-events-none"
+                style={{ transform: `rotate(${rotation}deg)` }}
+              />
+            </Rnd>
             )}
           </div>
 
           <div className="flex gap-2 mt-4">
-            <button onClick={handleIncreaseSize} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">+</button>
+            <button onClick={() => handleRotate('left')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↺</button>
+            <button onClick={() => handleRotate('right')} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↻</button>
+            <button onClick={handleIncreaseSize} className="bg-silver-300 text-gray-800 p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">+</button>
             <button onClick={handleDecreaseSize} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">-</button>
             <button onClick={() => moveOverlay('up')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↑</button>
             <button onClick={() => moveOverlay('down')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↓</button>
