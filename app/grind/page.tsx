@@ -275,8 +275,8 @@ export default function GrindPage() {
     };
 
     return (
-        <main className="container mx-auto flex p-4 gap-4">
-            <div className="w-1/2 flex flex-col gap-4 items-center">
+        <main className="container mx-auto flex flex-col lg:flex-row p-4 gap-4">
+            <div className="w-full lg:w-1/2 flex flex-col gap-4 items-center">
                 <h1 className="text-2xl font-bold self-center">🎨 PFP Grinder</h1>
 
                 <div className="mb-4 w-full max-w-md">
@@ -317,7 +317,7 @@ export default function GrindPage() {
             </div>
             
 
-            <div className="w-1/2 overflow-y-auto max-h-screen nft-scroll-area" ref={nftListRef}>
+            <div className="w-full lg:w-1/2 overflow-y-auto max-h-screen nft-scroll-area" ref={nftListRef}>
                 
             <div className="flex flex-col items-center gap-4 w-full">
                     <OverlayPicker onSelect={handleAddOverlay} />
