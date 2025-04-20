@@ -32,12 +32,19 @@ import { useInView } from 'react-intersection-observer'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
 
+type OverlayType = 'image' | 'text';
+
 interface OverlayState {
-    id: string;
-    src: string | null;
-    position: { x: number; y: number };
-    size: { width: number; height: number };
-    rotation: number;
+  id: string;
+  type: OverlayType;
+  src: string | null;
+  text?: string;
+  color?: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  rotation: number;
+  fontSize?: number;
+  fontFamily?: string;
 }
 
 const generateCanvasImage = async (nftSrc: string, overlays: OverlayState[], backgroundColor: string): Promise<HTMLCanvasElement> => {
@@ -57,19 +64,56 @@ const generateCanvasImage = async (nftSrc: string, overlays: OverlayState[], bac
   ctx.drawImage(nftImage, 0, 0);
 
   await Promise.all(overlays.map(async overlay => {
-      if (overlay.src) {
+    const scaledX = overlay.position.x * scaleX;
+    const scaledY = overlay.position.y * scaleY;
+    const scaledW = overlay.size.width * scaleX;
+    const scaledH = overlay.size.height * scaleY;
+    if (overlay.type === 'image' && overlay.src) {
           const img = await loadImage(overlay.src);
-          const scaledX = overlay.position.x * scaleX;
-          const scaledY = overlay.position.y * scaleY;
-          const scaledW = overlay.size.width * scaleX;
-          const scaledH = overlay.size.height * scaleY;
+          
 
           ctx.save();
           ctx.translate(scaledX + scaledW / 2, scaledY + scaledH / 2);
           ctx.rotate((overlay.rotation * Math.PI) / 180);
           ctx.drawImage(img, -scaledW / 2, -scaledH / 2, scaledW, scaledH);
           ctx.restore();
-      }
+        } else if (overlay.type === 'text' && overlay.text) {
+            ctx.save();
+            const fontSize = overlay.fontSize || 30;
+            const fontFamily = overlay.fontFamily || 'sans-serif';
+            ctx.font = `${fontSize * scaleY}px ${fontFamily}`;
+            ctx.fillStyle = overlay.color || '#000000';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+          
+            const words = overlay.text.split(' ');
+            let line = '';
+            const lineHeight = fontSize * scaleY * 1.2;
+            const scaledOverlayWidth = overlay.size.width * scaleX;
+          
+            const centerX = scaledX + scaledW / 2;
+            const centerY = scaledY + scaledH / 2;
+          
+            // Translate + rotate before drawing text
+            ctx.translate(centerX, centerY);
+            ctx.rotate((overlay.rotation * Math.PI) / 180);
+          
+            let y = -scaledH / 2;
+            for (let i = 0; i < words.length; i++) {
+              const testLine = line + words[i] + ' ';
+              const metrics = ctx.measureText(testLine);
+              if (metrics.width > scaledOverlayWidth && i > 0) {
+                ctx.fillText(line, 0, y);
+                line = words[i] + ' ';
+                y += lineHeight;
+              } else {
+                line = testLine;
+              }
+            }
+            ctx.fillText(line, 0, y);
+          
+            ctx.restore();
+          }
   }));
 
   return canvas;
@@ -127,7 +171,7 @@ const handleCopyToClipboard = async (selectedNft: string, overlays: OverlayState
 
 export default function GrindPage() {
     const [selectedNft, setSelectedNft] = useState<string | null>(null);
-    const [backgroundColor, setBackgroundColor] = useState<string>('#ffffff');
+    const [backgroundColor, setBackgroundColor] = useState<string>('#00FFB3');
     const [overlays, setOverlays] = useState<OverlayState[]>([]);
     const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
     const [walletAddress, setWalletAddress] = useState<string>('');
@@ -140,7 +184,7 @@ export default function GrindPage() {
     const [isDraggingOrResizing, setIsDraggingOrResizing] = useState(false);
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
     const proxiedNFT = selectedNft ? `/api/proxy?url=${encodeURIComponent(selectedNft)}` : null;
-
+    const [isImageLoading, setIsImageLoading] = useState(false);
     const selectedOverlay = overlays.find(overlay => overlay.id === selectedOverlayId);
 
 
@@ -155,6 +199,7 @@ export default function GrindPage() {
     const handleAddOverlay = (overlaySrc: string) => {
         const newOverlay: OverlayState = {
             id: uuidv4(),
+            type: 'image',
             src: overlaySrc,
             position: { x: 100, y: 100 },
             size: { width: 150, height: 150 },
@@ -331,9 +376,12 @@ export default function GrindPage() {
 
                     {/* NFT Dropdown */}
                     <NFTDropdownSelector
-                    filteredNFTs={filteredNFTs}
-                    onSelect={(nft) => setSelectedNft(nft)}
-                    />
+                        filteredNFTs={filteredNFTs}
+                        onSelect={(nft) => {
+                            setIsImageLoading(true);
+                            setSelectedNft(nft);
+                        }}
+                        />
                 </CardContent>
                 </Card>
                 <Card className="max-w-2xl w-full mx-auto mt-6 rounded-2xl shadow-md">
@@ -358,6 +406,17 @@ export default function GrindPage() {
                         }
                         }}
                     />
+
+                    <div className="w-full max-w-2xl mx-auto flex flex-col gap-2">
+                    <Label htmlFor="background-color" className="text-lg font-medium">Background Color</Label>
+                    <input
+                        id="background-color"
+                        type="color"
+                        value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="w-16 h-10 p-0 border rounded-md"
+                    />
+                    </div>
                     </CardContent>
                     </Card>
 
@@ -368,13 +427,41 @@ export default function GrindPage() {
                 
             <div className="flex flex-col items-center gap-4 w-full">
                     <OverlayPicker onSelect={handleAddOverlay} />
+                    <Button
+                        variant="outline"
+                        onClick={() =>
+                            setOverlays([
+                            ...overlays,
+                            {
+                                id: uuidv4(),
+                                type: 'text',
+                                text: 'New Text',
+                                color: '#000000',
+                                src: null,
+                                position: { x: 100, y: 100 },
+                                size: { width: 150, height: 50 },
+                                rotation: 0,
+                                fontSize: 30,
+                            },
+                            ])
+                        }
+                        >
+                        Add Text
+                        </Button>
+                        <div id="canvas" className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg" style={{ backgroundColor }}>
+                            {isImageLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-20">
+                                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-gray-900" />
+                                </div>
+                            )}
+                            <img
+                                src={uploadedImage || proxiedNFT || '/overlays/Grind.png'}
+                                alt="Selected image"
+                                className="w-full h-full object-contain"
+                                onLoad={() => setIsImageLoading(false)}
+                                onError={() => setIsImageLoading(false)}
+                            />
 
-                    <div id="canvas" className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg" style={{ backgroundColor }}>
-                    <img
-                        src={uploadedImage || proxiedNFT || '/overlays/01.png'}
-                        alt="Selected image"
-                        className="w-full h-full object-contain"
-                        />
 
                         {overlays.map((overlay, index) => (
                             <Rnd
@@ -396,7 +483,7 @@ export default function GrindPage() {
                                 }}
                                 className={`hover-overlay ${selectedOverlayId === overlay.id ? 'border-blue-500 border-2' : ''}`}
                                 enableResizing
-                                lockAspectRatio
+                                lockAspectRatio={overlay.type === 'image'}
                                 style={{
                                     position: 'absolute',
                                     background: 'transparent',
@@ -405,6 +492,7 @@ export default function GrindPage() {
                                 }}
                                 onClick={() => setSelectedOverlayId(overlay.id)}
                             >
+                                {overlay.type === 'image' ? (
                                 <img
                                     src={overlay.src || ''}
                                     alt={`Overlay ${index}`}
@@ -416,7 +504,27 @@ export default function GrindPage() {
                                       transition: 'transform 0.2s ease-in-out',
                                     }}
                                     className="w-full h-full object-contain pointer-events-none"
-                                />
+                                />) : (
+                                    <div
+                                      style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        color: overlay.color,
+                                        //fontSize: `${Math.max(12, overlay.size.height / 3)}px`,
+                                        fontSize: overlay.fontSize,
+                                        textAlign: 'center',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        transform: `rotate(${overlay.rotation}deg)`,
+                                        fontWeight: 'bold',
+                                        fontFamily: overlay.fontFamily || 'sans-serif',
+                                      }}
+                                      className="pointer-events-none"
+                                    >
+                                      {overlay.text}
+                                    </div>
+                                  )}
                                 {/* Better Visual Layer Indicator */}
                                 <div className="absolute top-0 left-0 bg-blue-500 text-white text-xs rounded-br px-1 py-0.5 opacity-70">{index + 1}</div>
                             </Rnd>
@@ -434,48 +542,138 @@ export default function GrindPage() {
                         <button onClick={() => moveOverlay('right')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">→</button>
                     </div>
                     
+                    
                 <h3 className="text-lg font-bold">Overlay Layers</h3>
                 {/*<Button onClick={handleClearAllOverlays} className="w-full" variant="destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Clear All
                 </Button>*/}
 
-                <DragDropContext onDragEnd={onDragEnd}>
+                <DragDropContext onDragEnd={onDragEnd} >
                     <Droppable droppableId="overlays">
                         {(provided) => (
-                            <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1">
+                            <div {...provided.droppableProps} ref={provided.innerRef} className="w-full px-4 space-y-1">
                                 {overlays.map((overlay, index) => (
                                     <Draggable key={overlay.id} draggableId={overlay.id} index={index}>
-                                        {(provided) => (
-                                            <div
-                                                ref={provided.innerRef}
-                                                {...provided.draggableProps}
-                                                {...provided.dragHandleProps}
-                                                className={`bg-white dark:bg-gray-700 p-1 rounded-md shadow-sm flex items-center justify-between ${selectedOverlayId === overlay.id ? 'border-blue-500 border-2' : ''}`}
-                                                onClick={() => setSelectedOverlayId(overlay.id)}
-                                            >
-                                                <div className="w-10 h-10 rounded-md overflow-hidden">
-                                                    <img src={overlay.src || '/overlays/01.png'} alt="Overlay Thumbnail" className="w-full h-full object-cover" />
-                                                </div>
-                                                <span className="flex-grow ml-2 text-sm truncate">{overlay.src?.split('/').pop()}</span>
-                                                <div className="flex items-center">
-                                                    <ArrowUpDown className="w-4 h-4 mr-2 cursor-grab" />
-                                                    <Button size="icon" onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDuplicateOverlay();
-                                                    }} className="mr-1">
-                                                        <Plus className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button size="icon" variant="destructive" onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleRemoveOverlay(overlay.id);
-                                                    }}>
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
+                                    {(provided) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        className={`bg-white dark:bg-gray-700 p-2 rounded-md shadow-sm flex flex-col w-full ${
+                                          selectedOverlayId === overlay.id ? 'border-blue-500 border-2' : ''
+                                        }`}
+                                        onClick={() => setSelectedOverlayId(overlay.id)}
+                                      >
+                                        {overlay.type === 'text' ? (
+                                          <div className="flex flex-col gap-1 mt-1 w-full">
+                                            <div className="flex items-center gap-2">
+                                              <Input
+                                                type="color"
+                                                value={overlay.color || '#000000'}
+                                                onChange={(e) =>
+                                                  handleUpdateOverlay(overlay.id, { color: e.target.value })
+                                                }
+                                                className="w-8 h-8 p-0"
+                                              />
+                                              <Input
+                                                type="number"
+                                                value={overlay.fontSize || 20}
+                                                onChange={(e) =>
+                                                  handleUpdateOverlay(overlay.id, {
+                                                    fontSize: parseInt(e.target.value),
+                                                  })
+                                                }
+                                                className="h-8 text-xs"
+                                                style={{ width: '8ch' }}
+                                              />
+                                              <select
+                                                value={overlay.fontFamily || 'sans-serif'}
+                                                onChange={(e) =>
+                                                  handleUpdateOverlay(overlay.id, {
+                                                    fontFamily: e.target.value,
+                                                  })
+                                                }
+                                                className="h-8 text-xs bg-white dark:bg-gray-800 border rounded px-1"
+                                              >
+                                                <option value="sans-serif">Sans Serif</option>
+                                                <option value="serif">Serif</option>
+                                                <option value="monospace">Monospace</option>
+                                                <option value="Arial">Arial</option>
+                                                <option value="Helvetica">Helvetica</option>
+                                              </select>
+                                              <div className="ml-auto flex items-center gap-1">
+                                                <Button
+                                                  size="icon"
+                                                  variant="ghost"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDuplicateOverlay();
+                                                  }}
+                                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                >
+                                                  <Copy className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                  size="icon"
+                                                  variant="ghost"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRemoveOverlay(overlay.id);
+                                                  }}
+                                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                              </div>
                                             </div>
+                                            <Input
+                                              type="text"
+                                              value={overlay.text || ''}
+                                              onChange={(e) =>
+                                                handleUpdateOverlay(overlay.id, { text: e.target.value })
+                                              }
+                                              className="w-full h-8 text-sm"
+                                              placeholder="Edit text"
+                                            />
+                                          </div>
+                                        ) : (
+                                          <div className="flex justify-between items-center gap-2 w-full">
+                                            <img
+                                              src={overlay.src || ''}
+                                              alt="preview"
+                                              className="w-10 h-10 object-contain border rounded shadow-sm bg-white dark:bg-gray-800"
+                                            />
+                                            <div className="ml-auto flex items-center gap-1">
+                                              <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDuplicateOverlay();
+                                                }}
+                                                className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                              >
+                                                <Copy className="h-4 w-4" />
+                                              </Button>
+                                              <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleRemoveOverlay(overlay.id);
+                                                }}
+                                                className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          </div>
                                         )}
-                                    </Draggable>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                  
                                 ))}
                                 {provided.placeholder}
                             </div>
@@ -485,11 +683,11 @@ export default function GrindPage() {
                 {overlays.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">No overlays added yet.</p>}
             
                     <div className="flex w-full max-w-md gap-2 mt-2">
-                        <Button onClick={() => handleExport(uploadedImage || proxiedNFT!, overlays, backgroundColor)} className="w-1/2">
+                        <Button onClick={() => handleExport(uploadedImage || proxiedNFT || '/overlays/Grind.png', overlays, backgroundColor)} className="w-1/2">
                             <DownloadIcon className="mr-2 h-4 w-4" />
                             Download
                         </Button>
-                        <Button onClick={() => handleCopyToClipboard(uploadedImage || proxiedNFT!, overlays, backgroundColor)} className="w-1/2">
+                        <Button onClick={() => handleCopyToClipboard(uploadedImage || proxiedNFT || '/overlays/Grind.png', overlays, backgroundColor)} className="w-1/2">
                             <Copy className="mr-2 h-4 w-4" />
                             Copy to Clipboard
                         </Button>
