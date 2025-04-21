@@ -84,7 +84,7 @@ const generateCanvasImage = async (nftSrc: string, overlays: OverlayState[], bac
             ctx.font = `${fontSize * scaleY}px ${fontFamily}`;
             ctx.fillStyle = overlay.color || '#000000';
             ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
+            ctx.textBaseline = 'middle';
           
             const words = overlay.text.split(' ');
             let line = '';
@@ -98,19 +98,28 @@ const generateCanvasImage = async (nftSrc: string, overlays: OverlayState[], bac
             ctx.translate(centerX, centerY);
             ctx.rotate((overlay.rotation * Math.PI) / 180);
           
-            let y = -scaledH / 2;
+            const lines: string[] = [];
             for (let i = 0; i < words.length; i++) {
-              const testLine = line + words[i] + ' ';
-              const metrics = ctx.measureText(testLine);
-              if (metrics.width > scaledOverlayWidth && i > 0) {
-                ctx.fillText(line, 0, y);
+            const testLine = line + words[i] + ' ';
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > scaledOverlayWidth && i > 0) {
+                lines.push(line);
                 line = words[i] + ' ';
-                y += lineHeight;
-              } else {
+            } else {
                 line = testLine;
-              }
             }
-            ctx.fillText(line, 0, y);
+            }
+            lines.push(line);
+
+            // Centrage vertical du bloc de texte
+            const totalHeight = lines.length * lineHeight;
+            let y = -totalHeight / 2 + lineHeight / 2;
+
+            for (const l of lines) {
+            ctx.fillText(l, 0, y);
+            y += lineHeight;
+            }
+
           
             ctx.restore();
           }
