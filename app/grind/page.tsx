@@ -5,7 +5,15 @@ import { useState, useRef, useCallback } from 'react'
 import { BackgroundPicker } from '@/components/BackgroundPicker'
 import { EditableOverlay } from '@/components/EditableOverlay'
 import { ExportButtons } from '@/components/ExportButtons'
-import { DownloadIcon, RefreshCw, Share2, AlertCircle, MoveHorizontal, ArrowUpDown, Copy, Check, Layers2, Plus, Trash2, ArrowLeftRight } from "lucide-react"
+import { DownloadIcon, RefreshCw, Share2, AlertCircle, MoveHorizontal, ArrowUpDown, Copy, Check, Layers2, Plus, Trash2, ArrowLeftRight,RotateCcw,
+    RotateCw,
+    Minus,
+    ArrowUp,
+    ArrowDown,
+    ArrowLeft,
+    ArrowRight,
+    FlipHorizontal,
+    FlipVertical, } from "lucide-react"
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 import NFTDropdownSelector from '@/components/NFTDropdownSelector'
 import { OverlayPicker } from '@/components/OverlayPicker'
@@ -43,90 +51,111 @@ interface OverlayState {
   position: { x: number; y: number };
   size: { width: number; height: number };
   rotation: number;
+  flipX?: boolean;
+  flipY?: boolean;
   fontSize?: number;
   fontFamily?: string;
+  backgroundColor?: string;
 }
 
-const generateCanvasImage = async (nftSrc: string, overlays: OverlayState[], backgroundColor: string): Promise<HTMLCanvasElement> => {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error("Could not get canvas context");
-
-  const nftImage = await loadImage(nftSrc);
-  canvas.width = nftImage.width;
-  canvas.height = nftImage.height;
-
-  const scaleX = canvas.width / 400;
-  const scaleY = canvas.height / 400;
-
-  ctx.fillStyle = backgroundColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(nftImage, 0, 0);
-
-  await Promise.all(overlays.map(async overlay => {
-    const scaledX = overlay.position.x * scaleX;
-    const scaledY = overlay.position.y * scaleY;
-    const scaledW = overlay.size.width * scaleX;
-    const scaledH = overlay.size.height * scaleY;
-    if (overlay.type === 'image' && overlay.src) {
-          const img = await loadImage(overlay.src);
-          
-
-          ctx.save();
-          ctx.translate(scaledX + scaledW / 2, scaledY + scaledH / 2);
-          ctx.rotate((overlay.rotation * Math.PI) / 180);
-          ctx.drawImage(img, -scaledW / 2, -scaledH / 2, scaledW, scaledH);
-          ctx.restore();
-        } else if (overlay.type === 'text' && overlay.text) {
-            ctx.save();
-            const fontSize = overlay.fontSize || 30;
-            const fontFamily = overlay.fontFamily || 'sans-serif';
-            ctx.font = `${fontSize * scaleY}px ${fontFamily}`;
-            ctx.fillStyle = overlay.color || '#000000';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-          
-            const words = overlay.text.split(' ');
-            let line = '';
-            const lineHeight = fontSize * scaleY * 1.2;
-            const scaledOverlayWidth = overlay.size.width * scaleX;
-          
-            const centerX = scaledX + scaledW / 2;
-            const centerY = scaledY + scaledH / 2;
-          
-            // Translate + rotate before drawing text
-            ctx.translate(centerX, centerY);
-            ctx.rotate((overlay.rotation * Math.PI) / 180);
-          
-            const lines: string[] = [];
-            for (let i = 0; i < words.length; i++) {
-            const testLine = line + words[i] + ' ';
-            const metrics = ctx.measureText(testLine);
-            if (metrics.width > scaledOverlayWidth && i > 0) {
-                lines.push(line);
-                line = words[i] + ' ';
-            } else {
-                line = testLine;
-            }
-            }
-            lines.push(line);
-
-            // Centrage vertical du bloc de texte
-            const totalHeight = lines.length * lineHeight;
-            let y = -totalHeight / 2 + lineHeight / 2;
-
-            for (const l of lines) {
-            ctx.fillText(l, 0, y);
-            y += lineHeight;
-            }
-
-          
-            ctx.restore();
+const generateCanvasImage = async (
+    nftSrc: string,
+    overlays: OverlayState[],
+    backgroundColor: string
+  ): Promise<HTMLCanvasElement> => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error("Could not get canvas context");
+  
+    const nftImage = await loadImage(nftSrc);
+    canvas.width = nftImage.width;
+    canvas.height = nftImage.height;
+  
+    const scaleX = canvas.width / 400;
+    const scaleY = canvas.height / 400;
+  
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(nftImage, 0, 0);
+  
+    await Promise.all(overlays.map(async (overlay) => {
+      const scaledX = overlay.position.x * scaleX;
+      const scaledY = overlay.position.y * scaleY;
+      const scaledW = overlay.size.width * scaleX;
+      const scaledH = overlay.size.height * scaleY;
+  
+      const centerX = scaledX + scaledW / 2;
+      const centerY = scaledY + scaledH / 2;
+  
+      if (overlay.type === 'image' && overlay.src) {
+        const img = await loadImage(overlay.src);
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate((overlay.rotation * Math.PI) / 180);
+        ctx.scale(overlay.flipX ? -1 : 1, overlay.flipY ? -1 : 1);
+        ctx.drawImage(img, -scaledW / 2, -scaledH / 2, scaledW, scaledH);
+        ctx.restore();
+  
+      } else if (overlay.type === 'text' && overlay.text) {
+        ctx.save();
+  
+        const fontSize = overlay.fontSize || 30;
+        const fontFamily = overlay.fontFamily || 'sans-serif';
+        ctx.font = `${fontSize * scaleY}px ${fontFamily}`;
+        ctx.fillStyle = overlay.color || '#000000';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+  
+        const words = overlay.text.split(' ');
+        const lineHeight = fontSize * scaleY * 1.2;
+        const scaledOverlayWidth = overlay.size.width * scaleX;
+  
+        const lines: string[] = [];
+        let currentLine = '';
+  
+        for (let i = 0; i < words.length; i++) {
+          const testLine = currentLine + words[i] + ' ';
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width > scaledOverlayWidth && i > 0) {
+            lines.push(currentLine);
+            currentLine = words[i] + ' ';
+          } else {
+            currentLine = testLine;
           }
-  }));
-
-  return canvas;
-}
+        }
+        lines.push(currentLine);
+  
+        const totalHeight = lines.length * lineHeight;
+  
+        ctx.translate(centerX, centerY);
+        ctx.rotate((overlay.rotation * Math.PI) / 180);
+        ctx.scale(overlay.flipX ? -1 : 1, overlay.flipY ? -1 : 1);
+  
+        // Draw background box if defined
+        if (
+          overlay.backgroundColor &&
+          overlay.backgroundColor !== 'transparent' &&
+          overlay.backgroundColor !== '#00000000'
+        ) {
+          ctx.fillStyle = overlay.backgroundColor;
+          ctx.fillRect(-scaledW / 2, -totalHeight / 2, scaledW, totalHeight);
+          ctx.fillStyle = overlay.color || '#000000'; // reset for text
+        }
+  
+        // Draw each line
+        let y = -totalHeight / 2 + lineHeight / 2;
+        for (const line of lines) {
+          ctx.fillText(line, 0, y);
+          y += lineHeight;
+        }
+  
+        ctx.restore();
+      }
+    }));
+  
+    return canvas;
+  };
+  
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -180,7 +209,7 @@ const handleCopyToClipboard = async (selectedNft: string, overlays: OverlayState
 
 export default function GrindPage() {
     const [selectedNft, setSelectedNft] = useState<string | null>(null);
-    const [backgroundColor, setBackgroundColor] = useState<string>('#00FFB3');
+    const [backgroundColor, setBackgroundColor] = useState<string>('#12D379');
     const [overlays, setOverlays] = useState<OverlayState[]>([]);
     const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
     const [walletAddress, setWalletAddress] = useState<string>('');
@@ -287,7 +316,22 @@ export default function GrindPage() {
           });
       }
   };
-
+  const handleFlipHorizontal = () => {
+    if (selectedOverlayId && selectedOverlay) {
+      handleUpdateOverlay(selectedOverlayId, {
+        flipX: !selectedOverlay.flipX,
+      });
+    }
+  };
+  
+  const handleFlipVertical = () => {
+    if (selectedOverlayId && selectedOverlay) {
+      handleUpdateOverlay(selectedOverlayId, {
+        flipY: !selectedOverlay.flipY,
+      });
+    }
+  };
+  
   const moveOverlay = (direction: 'up' | 'down' | 'left' | 'right') => {
       if (selectedOverlayId && selectedOverlay) {
           const movement = 5;
@@ -502,17 +546,22 @@ export default function GrindPage() {
                             >
                                 {overlay.type === 'image' ? (
                                 <img
-                                    src={overlay.src || ''}
-                                    alt={`Overlay ${index}`}
-                                    style={{
-                                      width: '100%',
-                                      height: '100%',
-                                      objectFit: 'contain',
-                                      transform: `rotate(${overlay.rotation}deg)`,
-                                      transition: 'transform 0.2s ease-in-out',
-                                    }}
-                                    className="w-full h-full object-contain pointer-events-none"
-                                />) : (
+                                src={overlay.src || ''}
+                                alt={`Overlay ${index}`}
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'contain',
+                                  transform: `
+                                    rotate(${overlay.rotation}deg)
+                                    scaleX(${overlay.flipX ? -1 : 1})
+                                    scaleY(${overlay.flipY ? -1 : 1})
+                                  `,
+                                  transition: 'transform 0.2s ease-in-out',
+                                }}
+                                className="w-full h-full object-contain pointer-events-none"
+                              />
+                              ) : (
                                     <div
                                       style={{
                                         width: '100%',
@@ -539,16 +588,107 @@ export default function GrindPage() {
                         ))}
                     </div>
 
-                    <div className="flex gap-2 mt-4">
-                        <button onClick={() => handleRotate('left')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↺</button>
-                        <button onClick={() => handleRotate('right')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↻</button>
-                        <button onClick={handleIncreaseSize} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">+</button>
-                        <button onClick={handleDecreaseSize} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">-</button>
-                        <button onClick={() => moveOverlay('up')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↑</button>
-                        <button onClick={() => moveOverlay('down')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">↓</button>
-                        <button onClick={() => moveOverlay('left')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-whitedark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">←</button>
-                        <button onClick={() => moveOverlay('right')} className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center">→</button>
-                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+  {/* Rotate Left */}
+  <button
+    onClick={() => handleRotate('left')}
+    title="Rotate left"
+    aria-label="Rotate left"
+    className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-700"
+  >
+    <RotateCcw className="w-5 h-5" />
+  </button>
+
+  {/* Rotate Right */}
+  <button
+    onClick={() => handleRotate('right')}
+    title="Rotate right"
+    aria-label="Rotate right"
+    className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-700"
+  >
+    <RotateCw className="w-5 h-5" />
+  </button>
+
+  {/* Increase Size */}
+  <button
+    onClick={handleIncreaseSize}
+    title="Increase size"
+    aria-label="Increase size"
+    className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-700"
+  >
+    <Plus className="w-5 h-5" />
+  </button>
+
+  {/* Decrease Size */}
+  <button
+    onClick={handleDecreaseSize}
+    title="Decrease size"
+    aria-label="Decrease size"
+    className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-700"
+  >
+    <Minus className="w-5 h-5" />
+  </button>
+
+  {/* Move Up */}
+  <button
+    onClick={() => moveOverlay('up')}
+    title="Move up"
+    aria-label="Move up"
+    className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-700"
+  >
+    <ArrowUp className="w-5 h-5" />
+  </button>
+
+  {/* Move Down */}
+  <button
+    onClick={() => moveOverlay('down')}
+    title="Move down"
+    aria-label="Move down"
+    className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-700"
+  >
+    <ArrowDown className="w-5 h-5" />
+  </button>
+
+  {/* Move Left */}
+  <button
+    onClick={() => moveOverlay('left')}
+    title="Move left"
+    aria-label="Move left"
+    className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-700"
+  >
+    <ArrowLeft className="w-5 h-5" />
+  </button>
+
+  {/* Move Right */}
+  <button
+    onClick={() => moveOverlay('right')}
+    title="Move right"
+    aria-label="Move right"
+    className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-700"
+  >
+    <ArrowRight className="w-5 h-5" />
+  </button>
+
+  {/* Flip Horizontal */}
+  <button
+    onClick={handleFlipHorizontal}
+    title="Flip horizontally"
+    aria-label="Flip horizontally"
+    className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-700"
+  >
+    <FlipHorizontal className="w-5 h-5" />
+  </button>
+
+  {/* Flip Vertical */}
+  <button
+    onClick={handleFlipVertical}
+    title="Flip vertically"
+    aria-label="Flip vertically"
+    className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white p-2 rounded-md shadow w-10 h-10 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-700"
+  >
+    <FlipVertical className="w-5 h-5" />
+  </button>
+</div>
                     
                     
                 <h3 className="text-lg font-bold">Overlay Layers</h3>
@@ -583,7 +723,9 @@ export default function GrindPage() {
                                                   handleUpdateOverlay(overlay.id, { color: e.target.value })
                                                 }
                                                 className="w-8 h-8 p-0"
+                                                title="Text color"
                                               />
+                                              
                                               <Input
                                                 type="number"
                                                 value={overlay.fontSize || 20}

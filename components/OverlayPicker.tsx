@@ -29,6 +29,7 @@ export function OverlayPicker({ onSelect, onAddText }: Props) {
       '/overlays/Head07.png',
       '/overlays/Head08.png',
       '/overlays/Head09.png',
+      '/overlays/Head10.png',
     ])
   }, [])
 
