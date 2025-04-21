@@ -426,28 +426,27 @@ export default function GrindPage() {
             <div className="w-full lg:w-1/2 overflow-y-auto max-h-screen nft-scroll-area" ref={nftListRef}>
                 
             <div className="flex flex-col items-center gap-4 w-full">
-                    <OverlayPicker onSelect={handleAddOverlay} />
-                    <Button
-                        variant="outline"
-                        onClick={() =>
-                            setOverlays([
-                            ...overlays,
-                            {
-                                id: uuidv4(),
-                                type: 'text',
-                                text: 'New Text',
-                                color: '#000000',
-                                src: null,
-                                position: { x: 100, y: 100 },
-                                size: { width: 150, height: 50 },
-                                rotation: 0,
-                                fontSize: 30,
-                            },
-                            ])
-                        }
-                        >
-                        Add Text
-                        </Button>
+            <OverlayPicker
+                onSelect={handleAddOverlay}
+                onAddText={() =>
+                    setOverlays([
+                    ...overlays,
+                    {
+                        id: crypto.randomUUID(),
+                        type: 'text',
+                        text: 'New Text',
+                        color: '#000000',
+                        src: null,
+                        position: { x: 100, y: 100 },
+                        size: { width: 150, height: 50 },
+                        rotation: 0,
+                        fontSize: 30,
+                        fontFamily: 'sans-serif',
+                    },
+                    ])
+                }
+                />
+
                         <div id="canvas" className="relative w-[400px] h-[400px] rounded-xl overflow-hidden shadow-lg" style={{ backgroundColor }}>
                             {isImageLoading && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-20">

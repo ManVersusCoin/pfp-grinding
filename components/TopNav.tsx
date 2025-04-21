@@ -2,26 +2,32 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils' // à supprimer si tu ne l’as pas
 
 export function TopNav() {
   const pathname = usePathname()
 
+  const links = [
+    { href: '/share', label: 'Share my Bag' },
+    { href: '/grind', label: 'PFP Grinder' },
+  ]
+
   return (
-    <nav className="flex gap-4">
-      <div className="bg-white dark:bg-gray-800 shadow-md px-4 py-2 rounded-full flex gap-4">
+    <nav className="flex flex-col md:flex-row gap-2 md:gap-4">
+      {links.map(({ href, label }) => (
         <Link
-          href="/share"
-          className={`font-medium ${pathname === '/share' ? 'text-blue-500 dark:text-blue-400' : ''}`}
+          key={href}
+          href={href}
+          className={cn(
+            'px-4 py-2 rounded-full text-sm font-medium transition-colors text-center',
+            'bg-muted hover:bg-accent text-foreground',
+            pathname === href &&
+              'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-400 dark:hover:bg-blue-500'
+          )}
         >
-          Share my Bag
+          {label}
         </Link>
-        <Link
-          href="/grind"
-          className={`font-medium ${pathname === '/grind' ? 'text-blue-500 dark:text-blue-400' : ''}`}
-        >
-          PFP Grinder
-        </Link>
-      </div>
+      ))}
     </nav>
   )
 }

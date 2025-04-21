@@ -5,9 +5,10 @@ import { Plus } from 'lucide-react'
 
 type Props = {
   onSelect: (url: string) => void
+  onAddText: () => void
 }
 
-export function OverlayPicker({ onSelect }: Props) {
+export function OverlayPicker({ onSelect, onAddText }: Props) {
   const [images, setImages] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -19,6 +20,12 @@ export function OverlayPicker({ onSelect }: Props) {
       '/overlays/Hat02.png',
       '/overlays/Hat03.png',
       '/overlays/Hat04.png',
+      '/overlays/Head01.png',
+      '/overlays/Head02.png',
+      '/overlays/Head03.png',
+      '/overlays/Head04.png',
+      '/overlays/Head05.png',
+      '/overlays/Head06.png',
     ])
   }, [])
 
@@ -36,7 +43,7 @@ export function OverlayPicker({ onSelect }: Props) {
   }
 
   return (
-    <div className="flex gap-2 overflow-x-auto items-center">
+    <div className="flex flex-wrap gap-2 items-center w-full justify-start">
       {images.map((src) => (
         <img
           key={src}
@@ -46,7 +53,7 @@ export function OverlayPicker({ onSelect }: Props) {
         />
       ))}
 
-      {/* Custom upload button */}
+      {/* Upload overlay */}
       <button
         onClick={() => fileInputRef.current?.click()}
         className="w-16 h-16 border border-dashed border-gray-400 rounded flex items-center justify-center text-gray-500 hover:border-blue-500 hover:text-blue-500 bg-white dark:bg-gray-800"
@@ -60,6 +67,15 @@ export function OverlayPicker({ onSelect }: Props) {
           onChange={handleFileChange}
           className="hidden"
         />
+      </button>
+
+      {/* Add text overlay */}
+      <button
+        onClick={onAddText}
+        className="w-16 h-16 border border-dashed border-gray-400 rounded flex items-center justify-center text-gray-600 hover:border-blue-500 hover:text-blue-500 bg-white dark:bg-gray-800"
+        title="Add text overlay"
+      >
+        <span className="text-2xl font-bold">T</span>
       </button>
     </div>
   )
