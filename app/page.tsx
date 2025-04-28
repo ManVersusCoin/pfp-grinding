@@ -32,6 +32,21 @@ export default function HomePage() {
             Customize your favorite NFT or a custom image with $GRIND overlays, add a hat or a cute hamster and create a grinding meme.
           </p>
         </Link>
+
+        {/* Grind my Pic */}
+        <Link
+          href="/grind-hat"
+          className="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow hover:shadow-lg transition-all border border-gray-200 dark:border-gray-700"
+        >
+          <div className="flex items-center gap-4 mb-3">
+            <Image src="/icons/Grind.png" alt="Grind meme icon" width={40} height={40} />
+            <h2 className="text-xl font-semibold">Add $grind accessory</h2>
+          </div>
+          <p className="text-gray-600 dark:text-gray-400">
+            Select a collection, a token ID, an accessory, share, and grind.
+          </p>
+        </Link>
+
       </div>
     </main>
   )
