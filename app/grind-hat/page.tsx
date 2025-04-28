@@ -386,7 +386,7 @@ export default function GrindHatPage() {
                 // Try known patterns for The Plague
                 const knownPatterns = [
                     `https://ipfs.io/ipfs/QmXFaCzoZjc5632b8dzJXWsxK1xhLFrharUfZHTTJVvsPF/${id}.png`,
-                    `https://ipfs.io/ipfs/QmYDvPAXtiJg7s8JdRBSLWdgSphQdac8j1YuQNNxcGE1hg/${id}.png`,
+                   // `https://ipfs.io/ipfs/QmYDvPAXtiJg7s8JdRBSLWdgSphQdac8j1YuQNNxcGE1hg/${id}.png`,
                     `https://ipfs.io/ipfs/QmQ6MDtfjg7LZbPRe7A3ZSPEtvYcVqUTmsuTMM1zhUR8MG/${id}.png`,
                 ];
 

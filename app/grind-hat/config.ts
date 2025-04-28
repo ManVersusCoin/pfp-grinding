@@ -108,7 +108,7 @@ export interface Overlay {
           // Format 1: ID in path with .png extension
           `https://ipfs.io/ipfs/QmXFaCzoZjc5632b8dzJXWsxK1xhLFrharUfZHTTJVvsPF/${id}.png`,
           // Format 2: Just ID in path
-          `https://ipfs.io/ipfs/QmYDvPAXtiJg7s8JdRBSLWdgSphQdac8j1YuQNNxcGE1hg/${id}.png`,
+          //`https://ipfs.io/ipfs/QmYDvPAXtiJg7s8JdRBSLWdgSphQdac8j1YuQNNxcGE1hg/${id}.png`,
           // Format 3: Direct CID
           `https://ipfs.io/ipfs/Qme42q3ufJRUYB2mQfF5cYEMVRxvr7DKpaDcNUCHRmA43a`,
           // Format 4: New CID pattern found in token #9999
