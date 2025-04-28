@@ -3,10 +3,46 @@
 import { SUPPORTED_CHAINS } from "@/lib/constants"
 import type { NFT } from "@/types/nft"
 import { normalizeImageUrl } from "@/lib/image-utils"
+import { revalidatePath } from "next/cache";
 
 // Helper function to check if a URL is an MP4 file
 function isMP4(url: string): boolean {
   return url?.toLowerCase().endsWith(".mp4")
+}
+
+export async function getNFTMetadata(contractAddress: string, tokenId: string): Promise<{ success: boolean; data: any; error: string | null }> {
+  try {
+    const apiKey = process.env.ALCHEMY_API_KEY;
+
+    if (!apiKey) {
+      return { success: false, data: null, error: 'Alchemy API key is not configured' };
+    }
+
+    const baseUrl = `https://eth-mainnet.g.alchemy.com/nft/v3/${apiKey}`;
+    const url = `${baseUrl}/getNFTMetadata?contractAddress=${contractAddress}&tokenId=${tokenId}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      return { success: false, data: null, error: `Alchemy API error: ${response.status} ${response.statusText} - ${text}` };
+    }
+
+    const data = await response.json();
+    return { success: true, data, error: null };
+
+  } catch (error) {
+    console.error('Error fetching NFT metadata:', error);
+    return {
+      success: false,
+      data: null,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
 }
 
 export async function fetchNFTs(

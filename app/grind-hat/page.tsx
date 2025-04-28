@@ -2,569 +2,600 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { collections } from './config';
+import { getNFTMetadata } from '../actions/nft-actions';
 
 type CollectionName = keyof typeof collections;
 
 // Add this to fix TypeScript errors with custom canvas properties
 declare global {
-  interface HTMLCanvasElement {
-    __nftImage?: HTMLImageElement;
-    __overlayImage?: HTMLImageElement;
-  }
+    interface HTMLCanvasElement {
+        __nftImage?: HTMLImageElement;
+        __overlayImage?: HTMLImageElement;
+    }
 }
 
 // Loading Spinner Component
 const LoadingSpinner = () => (
-  <div className="flex justify-center items-center">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-  </div>
+    <div className="flex justify-center items-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>
 );
 
 // Alchemy API key - in a real app, use environment variables
-const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY; // Replace with your actual API key
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY// Replace with your actual API key
 
 // Simple in-memory cache for image URLs
 const imageUrlCache: Record<string, string> = {};
 
 export default function GrindHatPage() {
-  const defaultCollection = Object.keys(collections)[0] as CollectionName;
-  const [selectedCollection, setSelectedCollection] = useState<CollectionName>(defaultCollection);
-  const [nftId, setNftId] = useState('');
-  const [selectedOverlayIndex, setSelectedOverlayIndex] = useState(0);
-  const [overlayPosition, setOverlayPosition] = useState({ x: 0, y: 0 });
-  const [overlayScale, setOverlayScale] = useState(1); // 1 = 100% original size
-  const [isDragging, setIsDragging] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  // Dev mode states
-  const [devMode, setDevMode] = useState(false);
-  const [customNftImage, setCustomNftImage] = useState<File | null>(null);
-  const [customOverlayImage, setCustomOverlayImage] = useState<File | null>(null);
-  const [customNftImageUrl, setCustomNftImageUrl] = useState<string | null>(null);
-  const [customOverlayImageUrl, setCustomOverlayImageUrl] = useState<string | null>(null);
+    const defaultCollection = Object.keys(collections)[0] as CollectionName;
+    const [selectedCollection, setSelectedCollection] = useState<CollectionName>(defaultCollection);
+    const [nftId, setNftId] = useState('');
+    const [selectedOverlayIndex, setSelectedOverlayIndex] = useState(0);
+    const [overlayPosition, setOverlayPosition] = useState({ x: 0, y: 0 });
+    const [overlayScale, setOverlayScale] = useState(1); // 1 = 100% original size
+    const [isDragging, setIsDragging] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [debugInfo, setDebugInfo] = useState<string | null>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useEffect(() => {
-    if (collections[selectedCollection]) {
-      const initialOverlay = collections[selectedCollection].overlays[selectedOverlayIndex];
-      
-      // Check if the overlay has x and y properties, otherwise use default values
-      const x = initialOverlay && typeof initialOverlay.x === 'number' ? initialOverlay.x : 0;
-      const y = initialOverlay && typeof initialOverlay.y === 'number' ? initialOverlay.y : 0;
-      
-      setOverlayPosition({ x, y });
-      setOverlayScale(1); // Reset scale when changing overlay
-    }
-  }, [selectedOverlayIndex, selectedCollection]); // Keep selectedCollection as dependency to handle initialization
-
-  // Cleanup function for blob URLs
-  useEffect(() => {
-    return () => {
-      if (customNftImageUrl && customNftImageUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(customNftImageUrl);
-      }
-      if (customOverlayImageUrl && customOverlayImageUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(customOverlayImageUrl);
-      }
-    };
-  }, []);
-
-  const resetDevMode = () => {
-    // Revoke existing URLs
-    if (customNftImageUrl && customNftImageUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(customNftImageUrl);
-    }
-    if (customOverlayImageUrl && customOverlayImageUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(customOverlayImageUrl);
-    }
-    
-    // Reset state
-    setCustomNftImage(null);
-    setCustomOverlayImage(null);
-    setCustomNftImageUrl(null);
-    setCustomOverlayImageUrl(null);
-    
-    // Clear canvas
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-      canvas.__nftImage = undefined;
-      canvas.__overlayImage = undefined;
-    }
-  };
-
-  // Add a function to reset states when collection changes
-  const resetCollectionState = (newCollection: CollectionName) => {
-    // Reset overlay index to 0 (first overlay in the new collection)
-    setSelectedOverlayIndex(0);
-    
-    // Reset scale to 1 (100%)
-    setOverlayScale(1);
-    
-    // Reset position to the default for the first overlay in the new collection
-    if (collections[newCollection] && collections[newCollection].overlays.length > 0) {
-      const initialOverlay = collections[newCollection].overlays[0];
-      const x = initialOverlay && typeof initialOverlay.x === 'number' ? initialOverlay.x : 0;
-      const y = initialOverlay && typeof initialOverlay.y === 'number' ? initialOverlay.y : 0;
-      setOverlayPosition({ x, y });
-    } else {
-      // Fallback to default position if no overlays exist
-      setOverlayPosition({ x: 0, y: 0 });
-    }
-    
-    // Clear any previous error messages
-    setErrorMessage('');
-    
-    // Clear debug info
-    setDebugInfo(null);
-    
-    // Clear the canvas
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-      canvas.__nftImage = undefined;
-      canvas.__overlayImage = undefined;
-    }
-  };
-
-  const handleNftImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        setErrorMessage('Please upload a valid image file');
-        return;
-      }
-      
-      // Revoke previous URL if it exists
-      if (customNftImageUrl && customNftImageUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(customNftImageUrl);
-      }
-      
-      setCustomNftImage(file);
-      
-      // Create a URL for the uploaded image
-      const imageUrl = URL.createObjectURL(file);
-      setCustomNftImageUrl(imageUrl);
-      
-      // Clear any previous error
-      setErrorMessage('');
-    }
-  };
-
-  const handleOverlayImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        setErrorMessage('Please upload a valid image file');
-        return;
-      }
-      
-      // Revoke previous URL if it exists
-      if (customOverlayImageUrl && customOverlayImageUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(customOverlayImageUrl);
-      }
-      
-      setCustomOverlayImage(file);
-      
-      // Create a URL for the uploaded image
-      const imageUrl = URL.createObjectURL(file);
-      setCustomOverlayImageUrl(imageUrl);
-      
-      // Clear any previous error
-      setErrorMessage('');
-    }
-  };
-
-  const loadImage = (src: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      
-      // Set a timeout to prevent hanging on bad URLs
-      const timeout = setTimeout(() => {
-        console.error('Image load timeout for:', src);
-        reject(new Error(`Timeout loading image from ${src}`));
-      }, 15000); // 15 second timeout
-      
-      img.onload = () => {
-        clearTimeout(timeout);
-        resolve(img);
-      };
-      
-      img.onerror = (e) => {
-        clearTimeout(timeout);
-        console.error('Image load error:', e, 'URL:', src);
-        reject(new Error(`Failed to load image from ${src}`));
-      };
-      
-      // Only add cache-busting for non-blob URLs
-      if (src.startsWith('blob:')) {
-        img.src = src;
-      } else {
-        // Add cache-busting query parameter to avoid browser caching issues
-        const cacheBuster = `?t=${Date.now()}`;
-        img.src = src + cacheBuster;
-      }
+    // Dev mode states
+    const [devMode, setDevMode] = useState(() => {
+        // Only run this on the client side
+        if (typeof window !== 'undefined') {
+            // Check localStorage or other client-side storage
+            return localStorage.getItem('devMode') === 'true';
+        }
+        return false; // Default value for server rendering
     });
-  };
+    const [customNftImage, setCustomNftImage] = useState<File | null>(null);
+    const [customOverlayImage, setCustomOverlayImage] = useState<File | null>(null);
+    const [customNftImageUrl, setCustomNftImageUrl] = useState<string | null>(null);
+    const [customOverlayImageUrl, setCustomOverlayImageUrl] = useState<string | null>(null);
 
-  const convertIpfsUrl = (ipfsUrl: string): string => {
-    if (!ipfsUrl) return ipfsUrl;
-    
-    // Handle ipfs:// protocol URLs
-    if (ipfsUrl.startsWith('ipfs://')) {
-      // Remove 'ipfs://' or 'ipfs://ipfs/' prefix and add gateway
-      return ipfsUrl
-        .replace('ipfs://ipfs/', 'https://ipfs.io/ipfs/')
-        .replace('ipfs://', 'https://ipfs.io/ipfs/');
-    }
-    
-    // Handle ar:// protocol (Arweave)
-    if (ipfsUrl.startsWith('ar://')) {
-      return ipfsUrl.replace('ar://', 'https://arweave.net/');
-    }
-    
-    return ipfsUrl;
-  };
+    useEffect(() => {
+        if (collections[selectedCollection]) {
+            const initialOverlay = collections[selectedCollection].overlays[selectedOverlayIndex];
 
-  // Try multiple IPFS gateways
-  const tryMultipleGateways = async (cid: string, path: string = ''): Promise<string> => {
-    const gateways = [
-      'https://ipfs.io/ipfs/',
-      'https://cloudflare-ipfs.com/ipfs/',
-      'https://gateway.pinata.cloud/ipfs/',
-      'https://dweb.link/ipfs/',
-      'https://ipfs.fleek.co/ipfs/'
-    ];
-    
-    // For each gateway, try a HEAD request
-    for (const gateway of gateways) {
-      const url = `${gateway}${cid}${path ? '/' + path : ''}`;
-      try {
-        const response = await fetch(url, { method: 'HEAD' });
-        if (response.ok) {
-          return url;
+            // Check if the overlay has x and y properties, otherwise use default values
+            const x = initialOverlay && typeof initialOverlay.x === 'number' ? initialOverlay.x : 0;
+            const y = initialOverlay && typeof initialOverlay.y === 'number' ? initialOverlay.y : 0;
+
+            setOverlayPosition({ x, y });
+            setOverlayScale(1); // Reset scale when changing overlay
         }
-      } catch (error) {
-        console.warn(`Gateway ${gateway} failed for ${cid}/${path}`);
-      }
-    }
-    
-    // If all gateways fail, return the first one anyway
-    return `${gateways[0]}${cid}${path ? '/' + path : ''}`;
-  };
-
-  const getAlchemyNftData = async (contractAddress: string, tokenId: string) => {
-    const alchemyUrl = `https://eth-mainnet.g.alchemy.com/nft/v2/${ALCHEMY_API_KEY}/getNFTMetadata`;
-    const params = new URLSearchParams({
-      contractAddress: contractAddress,
-      tokenId: tokenId,
-      refreshCache: 'false'
-    });
-
-    const response = await fetch(`${alchemyUrl}?${params.toString()}`);
-    
-    if (!response.ok) {
-      throw new Error(`Alchemy API error: ${response.statusText}`);
-    }
-
-    return await response.json();
-  };
-
-  const getNftImageUrl = async (collection: typeof collections[CollectionName], id: string): Promise<string> => {
-    // Check cache first
-    const cacheKey = `${collection.contractAddress || collection.baseUrl}-${id}`;
-    if (imageUrlCache[cacheKey]) {
-      return imageUrlCache[cacheKey];
-    }
-    
-    // If baseUrl is defined, use it directly
-    if (collection.baseUrl) {
-      const url = `${collection.baseUrl}${id}.${collection.format}`;
-      imageUrlCache[cacheKey] = url;
-      return url;
-    }
-    
-    // Otherwise, use Alchemy API
-    if (!collection.contractAddress || !collection.chain) {
-      throw new Error('Collection is missing contractAddress or chain configuration');
-    }
-
-    // Get NFT data from Alchemy
-    const alchemyData = await getAlchemyNftData(collection.contractAddress, id);
-    
-    // Store debug info
-    setDebugInfo(JSON.stringify(alchemyData, null, 2));
-    
-    let imageUrl = null;
-    
-    // If there's a custom image resolver, use it with the Alchemy data
-    if (collection.customImageResolver) {
-      try {
-        imageUrl = await collection.customImageResolver(id, alchemyData);
-        if (imageUrl) {
-          imageUrlCache[cacheKey] = imageUrl;
-          return imageUrl;
+    }, [selectedOverlayIndex, selectedCollection]); // Keep selectedCollection as dependency to handle initialization
+    useEffect(() => {
+        if (devMode) {
+            localStorage.setItem('devMode', 'true');
+        } else {
+            localStorage.setItem('devMode', 'false');
         }
-      } catch (error) {
-        console.error('Custom resolver error:', error);
-        // Continue to standard extraction if custom resolver fails
-      }
-    }
-    
-    // Standard extraction logic
-    // Try media gateway first (usually already HTTP URLs)
-    if (alchemyData.media && Array.isArray(alchemyData.media) && alchemyData.media.length > 0) {
-      if (alchemyData.media[0].gateway) {
-        imageUrl = alchemyData.media[0].gateway;
-      } else if (alchemyData.media[0].raw) {
-        imageUrl = alchemyData.media[0].raw;
-      }
-    }
-    
-    // Try metadata.image as fallback
-    if (!imageUrl && alchemyData.metadata && alchemyData.metadata.image) {
-      imageUrl = alchemyData.metadata.image;
-    }
-    
-    // Check for tokenUri as last resort
-    if (!imageUrl && alchemyData.tokenUri && alchemyData.tokenUri.gateway) {
-      try {
-        const metadataResponse = await fetch(alchemyData.tokenUri.gateway);
-        if (metadataResponse.ok) {
-          const metadata = await metadataResponse.json();
-          if (metadata.image) {
-            imageUrl = metadata.image;
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching token URI metadata:', error);
-      }
-    }
-    
-    // Handle special case for The Plague with error
-    if (!imageUrl && collection.contractAddress === '0xc379e535caff250a01caa6c3724ed1359fe5c29b') {
-      // Try known patterns for The Plague
-      const knownPatterns = [
-        `https://ipfs.io/ipfs/QmXFaCzoZjc5632b8dzJXWsxK1xhLFrharUfZHTTJVvsPF/${id}.png`,
-        `https://ipfs.io/ipfs/QmYDvPAXtiJg7s8JdRBSLWdgSphQdac8j1YuQNNxcGE1hg/${id}.png`,
-        `https://ipfs.io/ipfs/QmQ6MDtfjg7LZbPRe7A3ZSPEtvYcVqUTmsuTMM1zhUR8MG/${id}.png`,
-      ];
-      
-      for (const pattern of knownPatterns) {
-        try {
-          // Just a HEAD request to check if the URL exists
-          const response = await fetch(pattern, { method: 'HEAD' });
-          if (response.ok) {
-            imageUrl = pattern;
-            break;
-          }
-        } catch (error) {
-          console.warn(`Failed to access ${pattern}:`, error);
-        }
-      }
-    }
-    
-    // Convert IPFS URLs to HTTP URLs
-    if (imageUrl) {
-      imageUrl = convertIpfsUrl(imageUrl);
-    } else {
-      throw new Error('No image found in NFT metadata');
-    }
-    
-    // Cache the result
-    imageUrlCache[cacheKey] = imageUrl;
-    return imageUrl;
-  };
-
-  // Function to redraw the canvas with current position and scale
-  const redrawCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !canvas.__nftImage || !canvas.__overlayImage) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Get overlay dimensions based on mode
-    let overlayWidth, overlayHeight;
-    
-    if (devMode) {
-      // In dev mode, use the actual dimensions of the uploaded image
-      overlayWidth = canvas.__overlayImage.width;
-      overlayHeight = canvas.__overlayImage.height;
-    } else {
-      // In normal mode, use the dimensions from the collection config
-      const overlay = collections[selectedCollection].overlays[selectedOverlayIndex];
-      overlayWidth = overlay.width;
-      overlayHeight = overlay.height;
-    }
-    
-    // Calculate scaled dimensions
-    const scaledWidth = overlayWidth * overlayScale;
-    const scaledHeight = overlayHeight * overlayScale;
-    
-    // Clear and redraw
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(canvas.__nftImage, 0, 0, canvas.width, canvas.height);
-    ctx.drawImage(
-      canvas.__overlayImage,
-      overlayPosition.x,
-      overlayPosition.y,
-      scaledWidth,
-      scaledHeight
-    );
-  };
-
-  const generateImage = async () => {
-    setIsLoading(true);
-    setErrorMessage('');
-    setDebugInfo(null);
-    
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      setIsLoading(false);
-      return;
-    }
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      let nftImage: HTMLImageElement | null = null;
-      let overlayImage: HTMLImageElement | null = null;
-      
-      if (devMode) {
-        // In dev mode, use uploaded images
-        if (!customNftImageUrl) {
-          throw new Error('Please upload an NFT image');
-        }
-        
-        if (!customOverlayImageUrl) {
-          throw new Error('Please upload an overlay image');
-        }
-        
-        try {
-          nftImage = await loadImage(customNftImageUrl);
-        } catch (error) {
-          console.error('Failed to load custom NFT image:', error);
-          throw new Error('Failed to load the uploaded NFT image. Please try a different image.');
-        }
-        
-        try {
-          overlayImage = await loadImage(customOverlayImageUrl);
-        } catch (error) {
-          console.error('Failed to load custom overlay image:', error);
-          throw new Error('Failed to load the uploaded overlay image. Please try a different image.');
-        }
-      } else {
-        // Normal mode - use collections and Alchemy API
-        if (!nftId) {
-          setErrorMessage('Please enter an NFT ID');
-          setIsLoading(false);
-          return;
-        }
-        
-        const collection = collections[selectedCollection];
-        const overlay = collection.overlays[selectedOverlayIndex];
-        
-        // Get the NFT image URL
-        const nftImageUrl = await getNftImageUrl(collection, nftId);
-        
-        // Try to load the image
-        try {
-          nftImage = await loadImage(nftImageUrl);
-        } catch (imageError) {
-          console.error('Primary image load failed:', imageError);
-          
-          // If this is The Plague collection, try alternate gateways
-          if (collection.contractAddress === '0xc379e535caff250a01caa6c3724ed1359fe5c29b') {
-            // Try alternate gateways
-            const alternateUrls = [
-              `https://cloudflare-ipfs.com/ipfs/QmQ6MDtfjg7LZbPRe7A3ZSPEtvYcVqUTmsuTMM1zhUR8MG/${nftId}.png`,
-              `https://gateway.pinata.cloud/ipfs/QmQ6MDtfjg7LZbPRe7A3ZSPEtvYcVqUTmsuTMM1zhUR8MG/${nftId}.png`,
-              `https://ipfs.io/ipfs/QmXFaCzoZjc5632b8dzJXWsxK1xhLFrharUfZHTTJVvsPF/${nftId}.png`
-            ];
-            
-            for (const url of alternateUrls) {
-              try {
-                nftImage = await loadImage(url);
-                if (nftImage) break; // Exit loop if we successfully loaded an image
-              } catch (altError) {
-                console.warn(`Failed to load alternate URL: ${url}`, altError);
-              }
+    }, [devMode]);
+    // Cleanup function for blob URLs
+    useEffect(() => {
+        return () => {
+            if (customNftImageUrl && customNftImageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(customNftImageUrl);
             }
-          }
-          
-          // If still no image, throw error
-          if (!nftImage) {
-            throw new Error(`Failed to load image after trying multiple sources`);
-          }
+            if (customOverlayImageUrl && customOverlayImageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(customOverlayImageUrl);
+            }
+        };
+    }, []);
+
+    const resetDevMode = () => {
+        // Revoke existing URLs
+        if (customNftImageUrl && customNftImageUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(customNftImageUrl);
         }
-        
-        overlayImage = await loadImage(overlay.image);
-      }
-      
-      // At this point, both images should be loaded
-      if (!nftImage || !overlayImage) {
-        throw new Error('Failed to load images');
-      }
-      
-      // Store the images for reuse during drag operations
-      canvas.__nftImage = nftImage;
-      canvas.__overlayImage = overlayImage;
+        if (customOverlayImageUrl && customOverlayImageUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(customOverlayImageUrl);
+        }
 
-      // Calculate scaled dimensions for overlay
-      const overlayWidth = devMode ? overlayImage.width : collections[selectedCollection].overlays[selectedOverlayIndex].width;
-      const overlayHeight = devMode ? overlayImage.height : collections[selectedCollection].overlays[selectedOverlayIndex].height;
-      
-      const scaledWidth = overlayWidth * overlayScale;
-      const scaledHeight = overlayHeight * overlayScale;
+        // Reset state
+        setCustomNftImage(null);
+        setCustomOverlayImage(null);
+        setCustomNftImageUrl(null);
+        setCustomOverlayImageUrl(null);
 
-      // Draw the images
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(nftImage, 0, 0, canvas.width, canvas.height);
-      ctx.drawImage(
-        overlayImage, 
-        overlayPosition.x, 
-        overlayPosition.y, 
-        scaledWidth, 
-        scaledHeight
-      );
-      
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error generating image:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to load images');
-      setIsLoading(false);
-    }
-  };
+        // Clear canvas
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            canvas.__nftImage = undefined;
+            canvas.__overlayImage = undefined;
+        }
+    };
 
-  const downloadImage = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const link = document.createElement('a');
-    link.download = devMode 
-      ? `custom-image-with-overlay.png` 
-      : `${selectedCollection}-${nftId}-with-hat.png`;
-    link.href = canvas.toDataURL();
-    link.click();
-  };
+    // Add a function to reset states when collection changes
+    const resetCollectionState = (newCollection: CollectionName) => {
+        // Reset overlay index to 0 (first overlay in the new collection)
+        setSelectedOverlayIndex(0);
 
+        // Reset scale to 1 (100%)
+        setOverlayScale(1);
+
+        // Reset position to the default for the first overlay in the new collection
+        if (collections[newCollection] && collections[newCollection].overlays.length > 0) {
+            const initialOverlay = collections[newCollection].overlays[0];
+            const x = initialOverlay && typeof initialOverlay.x === 'number' ? initialOverlay.x : 0;
+            const y = initialOverlay && typeof initialOverlay.y === 'number' ? initialOverlay.y : 0;
+            setOverlayPosition({ x, y });
+        } else {
+            // Fallback to default position if no overlays exist
+            setOverlayPosition({ x: 0, y: 0 });
+        }
+
+        // Clear any previous error messages
+        setErrorMessage('');
+
+        // Clear debug info
+        setDebugInfo(null);
+
+        // Clear the canvas
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            canvas.__nftImage = undefined;
+            canvas.__overlayImage = undefined;
+        }
+    };
+
+    const handleNftImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                setErrorMessage('Please upload a valid image file');
+                return;
+            }
+
+            // Revoke previous URL if it exists
+            if (customNftImageUrl && customNftImageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(customNftImageUrl);
+            }
+
+            setCustomNftImage(file);
+
+            // Create a URL for the uploaded image
+            const imageUrl = URL.createObjectURL(file);
+            setCustomNftImageUrl(imageUrl);
+
+            // Clear any previous error
+            setErrorMessage('');
+        }
+    };
+
+    const handleOverlayImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                setErrorMessage('Please upload a valid image file');
+                return;
+            }
+
+            // Revoke previous URL if it exists
+            if (customOverlayImageUrl && customOverlayImageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(customOverlayImageUrl);
+            }
+
+            setCustomOverlayImage(file);
+
+            // Create a URL for the uploaded image
+            const imageUrl = URL.createObjectURL(file);
+            setCustomOverlayImageUrl(imageUrl);
+
+            // Clear any previous error
+            setErrorMessage('');
+        }
+    };
+
+    const loadImage = (src: string): Promise<HTMLImageElement> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+
+            // Set a timeout to prevent hanging on bad URLs
+            const timeout = setTimeout(() => {
+                console.error('Image load timeout for:', src);
+                reject(new Error(`Timeout loading image from ${src}`));
+            }, 15000); // 15 second timeout
+
+            img.onload = () => {
+                clearTimeout(timeout);
+                resolve(img);
+            };
+
+            img.onerror = (e) => {
+                clearTimeout(timeout);
+                console.error('Image load error:', e, 'URL:', src);
+                reject(new Error(`Failed to load image from ${src}`));
+            };
+
+            // Only add cache-busting for non-blob URLs
+            if (src.startsWith('blob:')) {
+                img.src = src;
+            } else {
+                // Add cache-busting query parameter to avoid browser caching issues
+                const cacheBuster = `?t=${Date.now()}`;
+                img.src = src + cacheBuster;
+            }
+        });
+    };
+
+    const convertIpfsUrl = (ipfsUrl: string): string => {
+        if (!ipfsUrl) return ipfsUrl;
+
+        // Handle ipfs:// protocol URLs
+        if (ipfsUrl.startsWith('ipfs://')) {
+            // Remove 'ipfs://' or 'ipfs://ipfs/' prefix and add gateway
+            return ipfsUrl
+                .replace('ipfs://ipfs/', 'https://ipfs.io/ipfs/')
+                .replace('ipfs://', 'https://ipfs.io/ipfs/');
+        }
+
+        // Handle ar:// protocol (Arweave)
+        if (ipfsUrl.startsWith('ar://')) {
+            return ipfsUrl.replace('ar://', 'https://arweave.net/');
+        }
+
+        return ipfsUrl;
+    };
+
+    // Try multiple IPFS gateways
+    const tryMultipleGateways = async (cid: string, path: string = ''): Promise<string> => {
+        const gateways = [
+            'https://ipfs.io/ipfs/',
+            'https://cloudflare-ipfs.com/ipfs/',
+            'https://gateway.pinata.cloud/ipfs/',
+            'https://dweb.link/ipfs/',
+            'https://ipfs.fleek.co/ipfs/'
+        ];
+
+        // For each gateway, try a HEAD request
+        for (const gateway of gateways) {
+            const url = `${gateway}${cid}${path ? '/' + path : ''}`;
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                if (response.ok) {
+                    return url;
+                }
+            } catch (error) {
+                console.warn(`Gateway ${gateway} failed for ${cid}/${path}`);
+            }
+        }
+
+        // If all gateways fail, return the first one anyway
+        return `${gateways[0]}${cid}${path ? '/' + path : ''}`;
+    };
+
+    const getAlchemyNftData = async (contractAddress: string, tokenId: string) => {
+        const alchemyUrl = `https://eth-mainnet.g.alchemy.com/nft/v2/${ALCHEMY_API_KEY}/getNFTMetadata`;
+        const params = new URLSearchParams({
+            contractAddress: contractAddress,
+            tokenId: tokenId,
+            refreshCache: 'false'
+        });
+
+        const response = await fetch(`${alchemyUrl}?${params.toString()}`);
+
+        if (!response.ok) {
+            throw new Error(`Alchemy API error: ${response.statusText}`);
+        }
+
+        return await response.json();
+    };
+
+    const getNftImageUrl = async (collection: typeof collections[CollectionName], id: string): Promise<string> => {
+        // Check cache first
+        const cacheKey = `${collection.contractAddress || collection.baseUrl}-${id}`;
+        if (imageUrlCache[cacheKey]) {
+            return imageUrlCache[cacheKey];
+        }
+
+        // If baseUrl is defined, use it directly
+        if (collection.baseUrl) {
+            const url = `${collection.baseUrl}${id}.${collection.format}`;
+            imageUrlCache[cacheKey] = url;
+            return url;
+        }
+
+        // Otherwise, use Alchemy API via server action
+        if (!collection.contractAddress || !collection.chain) {
+            throw new Error('Collection is missing contractAddress or chain configuration');
+        }
+
+        try {
+            // Call the server action
+            const result = await getNFTMetadata(collection.contractAddress, id);
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to fetch NFT metadata');
+            }
+
+            const alchemyData = result.data;
+
+            // Store debug info
+            setDebugInfo(JSON.stringify(alchemyData, null, 2));
+
+            // Rest of your function remains the same
+            let imageUrl = null;
+
+            // If there's a custom image resolver, use it with the Alchemy data
+            if (collection.customImageResolver) {
+                try {
+                    imageUrl = await collection.customImageResolver(id, alchemyData);
+                    if (imageUrl) {
+                        imageUrlCache[cacheKey] = imageUrl;
+                        return imageUrl;
+                    }
+                } catch (error) {
+                    console.error('Custom resolver error:', error);
+                    // Continue to standard extraction if custom resolver fails
+                }
+            }
+
+            // Standard extraction logic
+            // Try media gateway first (usually already HTTP URLs)
+            if (alchemyData.media && Array.isArray(alchemyData.media) && alchemyData.media.length > 0) {
+                if (alchemyData.media[0].gateway) {
+                    imageUrl = alchemyData.media[0].gateway;
+                } else if (alchemyData.media[0].raw) {
+                    imageUrl = alchemyData.media[0].raw;
+                }
+            }
+
+            // Try metadata.image as fallback
+            if (!imageUrl && alchemyData.metadata && alchemyData.metadata.image) {
+                imageUrl = alchemyData.metadata.image;
+            }
+
+            // Try metadata.image as fallback
+            if (!imageUrl && alchemyData.metadata && alchemyData.metadata.image) {
+                imageUrl = alchemyData.metadata.image;
+            }
+
+            // Check for tokenUri as last resort
+            if (!imageUrl && alchemyData.tokenUri && alchemyData.tokenUri.gateway) {
+                try {
+                    const metadataResponse = await fetch(alchemyData.tokenUri.gateway);
+                    if (metadataResponse.ok) {
+                        const metadata = await metadataResponse.json();
+                        if (metadata.image) {
+                            imageUrl = metadata.image;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching token URI metadata:', error);
+                }
+            }
+
+            // Handle special case for The Plague with error
+            if (!imageUrl && collection.contractAddress === '0xc379e535caff250a01caa6c3724ed1359fe5c29b') {
+                // Try known patterns for The Plague
+                const knownPatterns = [
+                    `https://ipfs.io/ipfs/QmXFaCzoZjc5632b8dzJXWsxK1xhLFrharUfZHTTJVvsPF/${id}.png`,
+                    `https://ipfs.io/ipfs/QmYDvPAXtiJg7s8JdRBSLWdgSphQdac8j1YuQNNxcGE1hg/${id}.png`,
+                    `https://ipfs.io/ipfs/QmQ6MDtfjg7LZbPRe7A3ZSPEtvYcVqUTmsuTMM1zhUR8MG/${id}.png`,
+                ];
+
+                for (const pattern of knownPatterns) {
+                    try {
+                        // Just a HEAD request to check if the URL exists
+                        const response = await fetch(pattern, { method: 'HEAD' });
+                        if (response.ok) {
+                            imageUrl = pattern;
+                            break;
+                        }
+                    } catch (error) {
+                        console.warn(`Failed to access ${pattern}:`, error);
+                    }
+                }
+            }
+
+            if (imageUrl) {
+                imageUrl = convertIpfsUrl(imageUrl);
+            } else {
+                throw new Error('No image found in NFT metadata');
+            }
+
+            // Cache the result
+            imageUrlCache[cacheKey] = imageUrl;
+            return imageUrl;
+        } catch (error) {
+            console.error('Error in getNftImageUrl:', error);
+            throw error;
+        }
+    };
+
+    // Function to redraw the canvas with current position and scale
+    const redrawCanvas = () => {
+        const canvas = canvasRef.current;
+        if (!canvas || !canvas.__nftImage || !canvas.__overlayImage) return;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Get overlay dimensions based on mode
+        let overlayWidth, overlayHeight;
+
+        if (devMode) {
+            // In dev mode, use the actual dimensions of the uploaded image
+            overlayWidth = canvas.__overlayImage.width;
+            overlayHeight = canvas.__overlayImage.height;
+        } else {
+            // In normal mode, use the dimensions from the collection config
+            const overlay = collections[selectedCollection].overlays[selectedOverlayIndex];
+            overlayWidth = overlay.width;
+            overlayHeight = overlay.height;
+        }
+
+        // Calculate scaled dimensions
+        const scaledWidth = overlayWidth * overlayScale;
+        const scaledHeight = overlayHeight * overlayScale;
+
+        // Clear and redraw
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(canvas.__nftImage, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(
+            canvas.__overlayImage,
+            overlayPosition.x,
+            overlayPosition.y,
+            scaledWidth,
+            scaledHeight
+        );
+    };
+
+    const generateImage = async () => {
+        setIsLoading(true);
+        setErrorMessage('');
+        setDebugInfo(null);
+
+        const canvas = canvasRef.current;
+        if (!canvas) {
+            setIsLoading(false);
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            let nftImage: HTMLImageElement | null = null;
+            let overlayImage: HTMLImageElement | null = null;
+
+            if (devMode) {
+                // In dev mode, use uploaded images
+                if (!customNftImageUrl) {
+                    throw new Error('Please upload an NFT image');
+                }
+
+                if (!customOverlayImageUrl) {
+                    throw new Error('Please upload an overlay image');
+                }
+
+                try {
+                    nftImage = await loadImage(customNftImageUrl);
+                } catch (error) {
+                    console.error('Failed to load custom NFT image:', error);
+                    throw new Error('Failed to load the uploaded NFT image. Please try a different image.');
+                }
+
+                try {
+                    overlayImage = await loadImage(customOverlayImageUrl);
+                } catch (error) {
+                    console.error('Failed to load custom overlay image:', error);
+                    throw new Error('Failed to load the uploaded overlay image. Please try a different image.');
+                }
+            } else {
+                // Normal mode - use collections and Alchemy API
+                if (!nftId) {
+                    setErrorMessage('Please enter an NFT ID');
+                    setIsLoading(false);
+                    return;
+                }
+
+                const collection = collections[selectedCollection];
+                const overlay = collection.overlays[selectedOverlayIndex];
+
+                // Get the NFT image URL
+                const nftImageUrl = await getNftImageUrl(collection, nftId);
+
+                // Try to load the image
+                try {
+                    nftImage = await loadImage(nftImageUrl);
+                } catch (imageError) {
+                    console.error('Primary image load failed:', imageError);
+
+                    // If this is The Plague collection, try alternate gateways
+                    if (collection.contractAddress === '0xc379e535caff250a01caa6c3724ed1359fe5c29b') {
+                        // Try alternate gateways
+                        const alternateUrls = [
+                            `https://cloudflare-ipfs.com/ipfs/QmQ6MDtfjg7LZbPRe7A3ZSPEtvYcVqUTmsuTMM1zhUR8MG/${nftId}.png`,
+                            `https://gateway.pinata.cloud/ipfs/QmQ6MDtfjg7LZbPRe7A3ZSPEtvYcVqUTmsuTMM1zhUR8MG/${nftId}.png`,
+                            `https://ipfs.io/ipfs/QmXFaCzoZjc5632b8dzJXWsxK1xhLFrharUfZHTTJVvsPF/${nftId}.png`
+                        ];
+
+                        for (const url of alternateUrls) {
+                            try {
+                                nftImage = await loadImage(url);
+                                if (nftImage) break; // Exit loop if we successfully loaded an image
+                            } catch (altError) {
+                                console.warn(`Failed to load alternate URL: ${url}`, altError);
+                            }
+                        }
+                    }
+
+                    // If still no image, throw error
+                    if (!nftImage) {
+                        throw new Error(`Failed to load image after trying multiple sources`);
+                    }
+                }
+
+                overlayImage = await loadImage(overlay.image);
+            }
+
+            // At this point, both images should be loaded
+            if (!nftImage || !overlayImage) {
+                throw new Error('Failed to load images');
+            }
+
+            // Store the images for reuse during drag operations
+            canvas.__nftImage = nftImage;
+            canvas.__overlayImage = overlayImage;
+
+            // Calculate scaled dimensions for overlay
+            const overlayWidth = devMode ? overlayImage.width : collections[selectedCollection].overlays[selectedOverlayIndex].width;
+            const overlayHeight = devMode ? overlayImage.height : collections[selectedCollection].overlays[selectedOverlayIndex].height;
+
+            const scaledWidth = overlayWidth * overlayScale;
+            const scaledHeight = overlayHeight * overlayScale;
+
+            // Draw the images
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(nftImage, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(
+                overlayImage,
+                overlayPosition.x,
+                overlayPosition.y,
+                scaledWidth,
+                scaledHeight
+            );
+
+            setIsLoading(false);
+        } catch (error) {
+            console.error('Error generating image:', error);
+            setErrorMessage(error instanceof Error ? error.message : 'Failed to load images');
+            setIsLoading(false);
+        }
+    };
+
+    const downloadImage = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const link = document.createElement('a');
+        link.download = devMode
+            ? `custom-image-with-overlay.png`
+            : `${selectedCollection}-${nftId}-with-hat.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+    };
+
+    
   const copyToClipboard = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
