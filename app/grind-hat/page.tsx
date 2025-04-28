@@ -339,6 +339,7 @@ export default function GrindHatPage() {
       }
       
       // Handle special case for The Plague with error
+      /*
       if (!imageUrl && collection.contractAddress === '0xc379e535caff250a01caa6c3724ed1359fe5c29b') {
         // Try known patterns for The Plague
         const knownPatterns = [
@@ -360,7 +361,7 @@ export default function GrindHatPage() {
           }
         }
       }
-      
+      */
       // Convert IPFS URLs to HTTP URLs
       if (imageUrl && imageUrl.startsWith('ipfs://')) {
         imageUrl = convertIpfsUrl(imageUrl);
