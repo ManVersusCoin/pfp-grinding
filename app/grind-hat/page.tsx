@@ -302,18 +302,6 @@ export default function GrindHatPage() {
       let imageUrl = null;
       
       // If there's a custom image resolver, use it with the Alchemy data
-      if (collection.customImageResolver) {
-        try {
-          imageUrl = await collection.customImageResolver(id, alchemyData);
-          if (imageUrl) {
-            imageUrlCache[cacheKey] = imageUrl;
-            return imageUrl;
-          }
-        } catch (error) {
-          console.error('Custom resolver error:', error);
-          // Continue to standard extraction if custom resolver fails
-        }
-      }
       
       // Extract image URL from Alchemy API v3 response
       
@@ -337,6 +325,19 @@ export default function GrindHatPage() {
       else if (alchemyData.image && alchemyData.image.thumbnailUrl) {
         imageUrl = alchemyData.image.thumbnailUrl;
       }
+      else if (collection.customImageResolver) {
+        try {
+          imageUrl = await collection.customImageResolver(id, alchemyData);
+          if (imageUrl) {
+            imageUrlCache[cacheKey] = imageUrl;
+            return imageUrl;
+          }
+        } catch (error) {
+          console.error('Custom resolver error:', error);
+          // Continue to standard extraction if custom resolver fails
+        }
+      }
+      
       
       // Handle special case for The Plague with error
       /*
