@@ -35,6 +35,7 @@ export interface Overlay {
       format: "png",
       overlays: [
         { name: "Grind hat", image: "/overlays/grind-hat/plague_hat.png", x: 0, y: 0, width: 800, height: 800 },
+        { name: "Hoodie up", image: "/overlays/grind-hat/plague_hoodie.png", x: 0, y: 0, width: 800, height: 800 },
       ],
       // Advanced resolver for The Plague that handles multiple formats
       customImageResolver: async (id, alchemyData) => {
